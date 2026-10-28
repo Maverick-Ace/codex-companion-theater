@@ -1,2 +1,2 @@
 """The independent companion world. The Codex adapter contains no behaviors."""
-VERSION = "0.1.0"
+VERSION = "0.1.1"

@@ -14,6 +14,18 @@ from .render import Renderer, ROOT
 
 MAX_MESSAGE = 65536
 
+def live_instances():
+    """Read the same v1 registry as the independently packaged MCP control client."""
+    found=[]
+    for file in sorted((Path.home()/'.cache/codex-companion-theater/instances').glob('*.json')):
+        try:
+            item=json.loads(file.read_text())
+            if item.get('v')==1 and Path(item['socket']).is_socket():
+                found.append({k:item[k] for k in ('id','socket','cwd')})
+        except (ValueError,KeyError,TypeError,OSError):
+            continue
+    return found
+
 def sixel_cache_entries(directory, stem):
     return directory.glob(f"{stem}_h*_v2.six")
 

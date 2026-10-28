@@ -1,14 +1,15 @@
 import argparse
 import json
 import os
-from .service import serve, request
+from .service import serve, request, live_instances
 
 def main():
     parser=argparse.ArgumentParser(description="Local companion theater")
-    parser.add_argument("--socket",default=os.getenv("CODEX_THEATER_SOCKET"))
+    parser.add_argument("--socket",help="Explicit local control socket")
+    parser.add_argument("--instance",help="Select a running foreground instance ID")
     subs=parser.add_subparsers(dest="op",required=True)
     server=subs.add_parser("serve");server.add_argument("--runtime",required=True);server.add_argument("--port",type=int)
-    for op in ("status","catalog"):subs.add_parser(op)
+    for op in ("status","catalog","instances"):subs.add_parser(op)
     scene=subs.add_parser("scene");scene.add_argument("name")
     cast=subs.add_parser("cast");cast.add_argument("ids",nargs="+")
     density=subs.add_parser("density");density.add_argument("value",type=int)
@@ -17,7 +18,13 @@ def main():
     args=parser.parse_args()
     if args.op=="serve":
         serve(args.runtime,args.port);return
-    if not args.socket:parser.error("--socket or CODEX_THEATER_SOCKET is required")
+    if args.op=='instances':
+        print(json.dumps(live_instances(),ensure_ascii=False,indent=2));return
+    if not args.socket:
+        candidates=[i for i in live_instances() if not args.instance or i['id']==args.instance]
+        if len(candidates)==1:args.socket=candidates[0]['socket']
+        elif not candidates and not args.instance:args.socket=os.getenv('CODEX_THEATER_SOCKET')
+        if not args.socket:parser.error("Select --socket or --instance; use 'instances' to list running windows")
     m={"v":1,"op":args.op}
     if args.op=="scene":m["name"]=args.name
     if args.op=="cast":m["ids"]=args.ids

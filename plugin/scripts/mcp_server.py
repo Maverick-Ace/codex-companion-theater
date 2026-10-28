@@ -11,10 +11,12 @@ TOOLS=[
  {"name":"theater_pause","description":"Pause or resume the local animation.","inputSchema":{"type":"object","properties":{"value":{"type":"boolean"}},"required":["value"]}},
  {"name":"theater_motion","description":"Set reduced motion for the local animation.","inputSchema":{"type":"object","properties":{"reduced":{"type":"boolean"}},"required":["reduced"]}},
 ]
+for tool in TOOLS:
+    tool['inputSchema']['properties']['instance_id']={"type":"string","description":"Select a foreground theater when multiple windows are active. Omit when only one is running."}
 
 def handle(m):
     method=m.get("method")
-    if method=="initialize":return {"protocolVersion":m.get("params",{}).get("protocolVersion","2024-11-05"),"capabilities":{"tools":{}},"serverInfo":{"name":"companion-theater","version":"0.1.0"}}
+    if method=="initialize":return {"protocolVersion":m.get("params",{}).get("protocolVersion","2024-11-05"),"capabilities":{"tools":{}},"serverInfo":{"name":"companion-theater","version":"0.1.1"}}
     if method=="ping":return {}
     if method=="tools/list":return {"tools":TOOLS}
     if method=="tools/call":
@@ -23,7 +25,7 @@ def handle(m):
         if name not in operations:raise ValueError("unknown tool")
         # Do not allow arguments to overwrite the mapped operation/version.
         allowed={"theater_status":[],"theater_scene":["name"],"theater_cast":["ids"],"theater_pause":["value"],"theater_motion":["reduced"]}[name]
-        reply=send({"op":operations[name],**{k:args[k] for k in allowed if k in args}})
+        reply=send({"op":operations[name],**{k:args[k] for k in allowed if k in args}},instance_id=args.get('instance_id'))
         return {"content":[{"type":"text","text":json.dumps(reply,ensure_ascii=False)}],"isError":reply.get("ok") is False}
     raise ValueError("unsupported method")
 

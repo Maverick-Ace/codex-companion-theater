@@ -108,7 +108,7 @@ class RenderAndProtocolTests(unittest.TestCase):
             thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
             try:
                 message={'jsonrpc':'2.0','id':5,'method':'tools/call','params':{'name':'theater_scene','arguments':{'name':'paperball'}}}
-                result=subprocess.run([sys.executable,str(ROOT/'plugin/scripts/mcp_server.py')],input=json.dumps(message)+'\n',text=True,capture_output=True,check=True,env=dict(os.environ,CODEX_THEATER_SOCKET=str(sock)))
+                result=subprocess.run([sys.executable,str(ROOT/'plugin/scripts/mcp_server.py')],input=json.dumps(message)+'\n',text=True,capture_output=True,check=True,env=dict(os.environ,HOME=temp,CODEX_THEATER_SOCKET=str(sock)))
                 reply=json.loads(result.stdout)['result']
                 self.assertFalse(reply['isError'])
                 self.assertEqual(theater.world.scene,'paperball')

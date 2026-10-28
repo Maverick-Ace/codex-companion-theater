@@ -45,11 +45,13 @@ ln -s "$PWD/scripts/codex-theater" ~/.local/bin/codex-theater
 codex-theater
 ```
 
-入口透传原 CLI 参数，例如 `codex-theater resume <会话ID>`。它临时关闭原生单宠物显示，启动专属引擎和 socket，退出时清理；不写全局宠物设置。Codex 自身的文件夹信任、审批和权限机制照常生效。
+入口原样透传 CLI 参数，不自动添加 `-c` 覆盖，保留原版共享后台与总览导航。显示适配层接管宠物图片槽，启动器只启动专属引擎与 socket，退出时清理；不写全局宠物设置。Codex 自身的文件夹信任、审批和权限机制照常生效。
+
+与原版共用 `CODEX_HOME`（默认 `~/.codex`），已有会话无需迁移。`codex-theater resume` 默认按当前目录筛选；查看其他目录的记录用 `codex-theater resume --all`。共享后台连接正常、输入框为空且没有菜单时，按 **左箭头** 进入总览，按 **Esc** 返回。用户自行传入的某些 `-c`、`--profile` 或 `--no-daemon` 参数仍可能使原版切到内嵌后台，进而关闭该导航。
 
 ## 控制角色与场景
 
-在由剧场启动器开启的 Codex 工具环境中，`CODEX_THEATER_SOCKET` 已指向当前实例：
+共享后台可能早于剧场启动，不能依赖它继承前台的 `CODEX_THEATER_SOCKET`。启动器在用户私有缓存中登记活动实例；只有一个实例时，命令和插件可自动找到它。多个实例时要求明确选择，避免控制到其他窗口：
 
 ```sh
 python -m theater.cli status
@@ -60,9 +62,11 @@ python -m theater.cli quiet
 python -m theater.cli play
 python -m theater.cli pause
 python -m theater.cli resume
+python -m theater.cli instances
+python -m theater.cli --instance <实例ID> scene tea
 ```
 
-场景 ID 为 `roam`、`chat`、`cookie`、`paperball`、`tea`、`parade`、`celebrate`。另一个独立终端需要通过 `--socket <路径>` 指定实例，不按工作目录猜测其他会话。
+场景 ID 为 `roam`、`chat`、`cookie`、`paperball`、`tea`、`parade`、`celebrate`。可用 `--socket <路径>` 显式指定控制端点。插件工具支持可选的 `instance_id`；不会按工作目录猜测目标窗口。实例登记只包含控制地址与进程/目录信息，不含输入、对话或工具内容。
 
 ## 插件与适配边界
 
@@ -100,10 +104,11 @@ hooks 需在 `/hooks` 中单独查看并信任。未启用 hooks 时，自由活
 ```sh
 python -m unittest discover -s tests -v
 python scripts/doctor.py
+python scripts/verify_navigation.py --cwd /path/to/already-trusted-folder
 python scripts/verify_native.py --cwd /path/to/already-trusted-folder
 python scripts/verify_native.py --cwd /path/to/already-trusted-folder --disconnect
 ```
 
-已通过 12 项行为/协议测试、12 项原生图片发送/清理测试、2 项官方插件环境转发测试。真实 CLI 的 PTY 检查覆盖出帧、输入、菜单、缩放、正常退出及引擎失联，不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
+已通过 19 项行为/协议/启动器测试、12 项原生图片发送/清理测试、2 项官方插件环境转发测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
 
 当前只有 0.163.0 的迁移配置经过验证。Sixel、Windows、tmux 和 Zellij 尚未完成本项目的实际显示验证，可先使用网页预览。
