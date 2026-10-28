@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+build/
+artifacts/runtime/
+.venv/
+artifacts/**/capture.ansi
+assets/references/
+docs/research/
+docs/design/
+artifacts/native/
+artifacts/native-disconnect/
+artifacts/doctor.json
+artifacts/validation.json
+artifacts/plugin-install-test.json
+artifacts/plugin-mcp-config-test.json
+artifacts/*.zip

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "companion-theater",
+  "version": "0.1.0",
+  "description": "Control the local animated companion theater without sending conversation content.",
+  "extensions": {
+    "com.openai": {
+      "interface": {"displayName": "输入框旁的小伙伴剧场"},
+      "hooks": "./hooks/events.json"
+    }
+  }
+}

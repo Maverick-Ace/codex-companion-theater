@@ -1,0 +1,8 @@
+Use case: stylized-concept. Asset type: production transparent sprite sheet for cozy desktop companion game. Reference image is character identity only. Draw ONE minimax girl repeated in exactly SIXTEEN poses in a strict uniform FOUR COLUMNS by FOUR ROWS square grid. Identity: Orange short hair, pale pink beret, pink white jacket and brown plaid skirt, tiny clapperboard and camera bag.
+Premium clean 2D anime chibi, 2.5 heads tall, big expressive eyes, crisp readable outlines, soft cel shading, same costume/scale in all cells. Whole body, ears, hair tips, tail, props, feet visible WELL INSIDE every cell, 8% transparent padding on ALL cell edges, 5% outer sheet margin. No cropped parts or touching cells. Actual transparent alpha background, no floor/shadows, no text/labels/grid/watermarks.
+Row1 four subtle idle/blink poses: open eyes relaxed, half blink, closed blink, reopened.
+Row2 four sequential RIGHT-facing walking cycle poses, alternating legs and swinging arms.
+Row3 four sequential LEFT-facing walking cycle poses, alternating legs and swinging arms, preserve asymmetric costume.
+Row4 cheerful hand wave; smiling chatting gesture; playful surprised recoil; cozy seated resting pose.
+
+Distinct articulated drawings, not translated duplicates. Uniform 4x4 grid, stable scale and baseline, high resolution square sheet.

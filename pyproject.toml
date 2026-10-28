@@ -1,0 +1,16 @@
+[project]
+name = "codex-companion-theater"
+version = "0.1.0"
+description = "Local animated companions with a small, versioned Codex display bridge"
+requires-python = ">=3.12"
+dependencies = ["Pillow>=9"]
+
+[project.scripts]
+companion-theater = "theater.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["theater"]

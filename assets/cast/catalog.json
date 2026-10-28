@@ -1,0 +1,1063 @@
+{
+  "version": 1,
+  "characters": [
+    {
+      "id": "minimax",
+      "name": "MiniMax",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/minimax.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/minimax",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "minimax/prompt.txt",
+        "sheet_sha256": "c165b7b191a619eed9fbc003ccc661b66c477f6e6034610e4d8bf0568e2345f3"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "rwkv",
+      "name": "RWKV",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "bird",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/rwkv.webp",
+        "profile": null,
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "rwkv/prompt.txt",
+        "sheet_sha256": "befc96ff62e36f415d7cd882936352ab34b842269b3ca2b4296d0efdbfe04794"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/deepseek.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/deepseek",
+        "authors": [
+          {
+            "name": "上善无形",
+            "role": "original_character"
+          },
+          {
+            "name": "ZipZipPipe",
+            "role": "adaptation"
+          }
+        ],
+        "stated_license": {
+          "name": "CC BY-NC-SA 4.0",
+          "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans"
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "deepseek/prompt.txt",
+        "sheet_sha256": "ce907abe0520ab5d12ca140df06704510b95852c0c3d31eeeaf1d2275ff1846b"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/qwen.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/qwen",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "qwen/prompt.txt",
+        "sheet_sha256": "20a9c2c8aeabf8b248a0a084f6d75608ea0c061b043ab72e814e6a66befe0bd3"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "llama",
+      "name": "Llama",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/llama.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/llama",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "llama/prompt.txt",
+        "sheet_sha256": "1e189a0146d22fa746b4bb01fb5333728d2156b1fffa7c199b418bd6192cc41e"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "seed",
+      "name": "Seed",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/seed.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/seed",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "seed/prompt.txt",
+        "sheet_sha256": "37f7865d9c71abdc10acfbfb38c0787f2426b615365c2f621868efa83fbcd5a6"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "grok",
+      "name": "Grok",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/grok.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/grok",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "grok/prompt.txt",
+        "sheet_sha256": "7a84a2c6873ce1ccac317c2017cb7b13caeb042c5eed51e03b260bb18c134037"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/kimi.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/kimi",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "kimi/prompt.txt",
+        "sheet_sha256": "26ccc9f6d063c927e711b224c12a78adce8b3d18ee89163d85f686fc16b45282"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "gpt",
+      "name": "GPT",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/gpt.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/gpt",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "gpt/prompt.txt",
+        "sheet_sha256": "59e164c447bd5608f31a4b9a57631b3d2ff3e8878093dee72ee5aaa14d34e5da"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/perplexity.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/perplexity",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "perplexity/prompt.txt",
+        "sheet_sha256": "91057e66ad3d4d1177820897e6799ca441e783ca516754c94fdd92888b6e4bc6"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/gemini.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/gemini",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "gemini/prompt.txt",
+        "sheet_sha256": "385e60183492826e184ad74ac3d2cc277ff8734e6aad0e23b902400b9a7fb3b1"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/claude.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/claude",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "claude/prompt.txt",
+        "sheet_sha256": "eecf8b4f098e85da22e289d9bd109a77df3325fe98d46222c88212882ac06700"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/mistral.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/mistral",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "mistral/prompt.txt",
+        "sheet_sha256": "ed2b00a991cd9731471d4915829ca5fea13d8ab42d4ebcea69180015ed48493c"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "glm",
+      "name": "GLM",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/glm.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/glm",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "glm/prompt.txt",
+        "sheet_sha256": "aa5fa21fd5e4103ddf6d1b30ccc282d64ba95ce8e37544fb62debe441b181c75"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "wenxin",
+      "name": "文心娘",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "wheelchair",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/wenxin.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/wenxin",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "wenxin/prompt.txt",
+        "sheet_sha256": "cd504975605ad03938dc2598bf2beec71bf3b7146ff2ade817e4784215a35e37"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "jev",
+      "name": "JEV",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/jev.webp",
+        "profile": "https://genderswapai.com/zh-CN/ai-gijinka/jev",
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "jev/prompt.txt",
+        "sheet_sha256": "041f46caed7f881eee2b20e1ae595c44cd8a4a2d227c9a3087a8de0c4b489e52"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    },
+    {
+      "id": "hunyuan",
+      "name": "混元娘",
+      "frames": 16,
+      "canvas": [
+        400,
+        350
+      ],
+      "states": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "walk_right": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "walk_left": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "wave": [
+          12
+        ],
+        "talk": [
+          13
+        ],
+        "surprise": [
+          14
+        ],
+        "rest": [
+          15
+        ]
+      },
+      "mobility": "walk",
+      "source": {
+        "image": "https://genderswapai.com/images/ai-gijinka/hunyuan.webp",
+        "profile": null,
+        "authors": [
+          {
+            "name": "ZipZipPipe",
+            "role": "credited_creator"
+          }
+        ],
+        "stated_license": {
+          "name": "unknown",
+          "url": null
+        }
+      },
+      "generation": {
+        "tool": "built-in image_gen",
+        "prompt": "hunyuan/prompt.txt",
+        "sheet_sha256": "6e29dc16d00ab604505dc598b428a1aaa967cecdd9acda0317c0b310ae5a9434"
+      },
+      "visual_review": "identity and costume compared with numbered official reference sheet; generated chibi variation"
+    }
+  ]
+}

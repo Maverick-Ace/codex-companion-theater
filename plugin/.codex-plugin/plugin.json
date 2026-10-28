@@ -1,0 +1,10 @@
+{
+  "name": "companion-theater",
+  "mcpServers": {
+    "companion-theater": {
+      "command": "python3",
+      "args": ["${PLUGIN_ROOT}/scripts/mcp_server.py"],
+      "env_vars": ["CODEX_THEATER_SOCKET"]
+    }
+  }
+}
