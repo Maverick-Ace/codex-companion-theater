@@ -25,17 +25,31 @@ python scripts/codex-theater --preview
 
 ## 接入 Codex CLI
 
-当前经过验证的版本为 **Codex 0.163.0**，Rust 工具链为 **1.94.1**，主要显示环境为 **Ghostty / Kitty graphics**。构建器从官方 tag 导出干净源码，保留原仓库和系统安装。
+当前已验证并默认构建 **Codex 0.165.0**，保留 0.163.0 的构建配置；Rust 工具链为 **1.94.1**，主要显示环境为 **Ghostty / Kitty graphics**。构建器从官方 tag 导出干净源码，保留原仓库和系统安装。
 
 ```sh
-git clone --depth 1 --branch rust-v0.163.0 https://github.com/openai/codex.git ../codex-source
+git clone --depth 1 --branch rust-v0.165.0 https://github.com/openai/codex.git ../codex-source
 rustup toolchain install 1.94.1
 python scripts/build_cli.py --source ../codex-source --check
 python scripts/build_cli.py --source ../codex-source
 ./scripts/codex-theater
 ```
 
-构建不会运行 Rust 格式化命令。首次构建会下载依赖，耗时和磁盘需求与 Codex 本身相近。可通过 `CARGO_HOME`、`CARGO_TARGET_DIR` 和 `CARGO_BUILD_JOBS` 复用缓存、调整构建并行度。二进制存于 `build/bin/`；系统的 `codex` 不会被替换。
+构建不会运行 Rust 格式化命令。首次构建会下载依赖，耗时和磁盘需求与 Codex 本身相近。构建会校正官方发布标签中内部工作区包的版本元数据，并用 `--locked` 保持第三方依赖固定；缓存同时校验 CLI 版本、上游提交、适配指纹和二进制哈希，避免误用旧版。可通过 `CARGO_HOME`、`CARGO_TARGET_DIR` 和 `CARGO_BUILD_JOBS` 复用缓存、调整构建并行度。二进制存于 `build/bin/`；系统的 `codex` 不会被替换。
+
+已有原版 npm 安装可单独更新：`npm install -g @openai/codex@0.165.0`。原生 npm 更新与剧场构建分开进行，不会自动迁移或替换剧场入口。
+
+先验收候选版、再切换剧场时，可指定独立清单：
+
+```sh
+python scripts/build_cli.py --source ../codex-source --manifest build/candidate-0.165.0.json
+python scripts/verify_navigation.py --manifest build/candidate-0.165.0.json --expect-version 0.165.0 --cwd /path/to/already-trusted-folder
+python scripts/verify_effort.py --manifest build/candidate-0.165.0.json --expect-version 0.165.0 --cwd /path/to/already-trusted-folder
+# 单次使用候选版，不改变默认入口
+CODEX_THEATER_MANIFEST="$PWD/build/candidate-0.165.0.json" ./scripts/codex-theater
+```
+
+构建产物使用带内容哈希的文件名，构建失败时保留旧二进制和启动清单。验收脚本同时检查版本输出和实际运行的进程路径。
 
 需要独立命令时，可在仓库根目录执行：
 
@@ -88,7 +102,7 @@ flowchart LR
     E --> W[本地交互预览]
 ```
 
-适配仅修改三个现有 Rust 文件，新增一个桥接模块。角色、对白和引擎更新通常无需重编译 Codex。后台 IPC 使用有界队列，旧布局和失联帧隐藏；原生通道负责光标恢复和退出清图。迁移工具对已验证版本自动检查、隔离构建，遇到未知版本或不匹配接入点会停止。
+绘图与状态适配仍修改三个既有 Rust 文件，新增一个桥接模块。使用 Rust 1.94 构建 0.165.0 时，独立兼容层还会在五个文件中改用等价的稳定 API／语法；这些修改仅发生于构建副本。角色、对白和引擎更新通常无需重编译 Codex。后台 IPC 使用有界队列，旧布局和失联帧隐藏；原生通道负责光标恢复和退出清图。迁移工具对已验证版本自动检查、隔离构建，遇到未知版本或不匹配接入点会停止。
 
 `plugin/` 包含标准清单、五个 MCP 工具、操作技能和可选 hooks；一个小型 Codex overlay 仅转发当前实例的 socket 环境变量。插件已在隔离的临时 `CODEX_HOME` 中完成安装和 MCP 配置回读测试。用户可按需安装：
 
@@ -118,6 +132,6 @@ python scripts/verify_native.py --cwd /path/to/already-trusted-folder
 python scripts/verify_native.py --cwd /path/to/already-trusted-folder --disconnect
 ```
 
-已通过 76 项行为、协议、动作网格、道具过渡与接触、入场对白、启动器和强度同步测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_effort.py` 通过真实快捷键和 `/model` 菜单验证 Max/Ultra 的单次演出、全员登场与恢复，同时检查总览导航。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
+已通过 93 项行为、协议、动作网格、道具过渡与接触、入场对白、启动器、构建缓存、Rust 1.94 兼容及强度同步测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_effort.py` 通过真实快捷键和 `/model` 菜单验证 Max/Ultra 的单次演出、全员登场与恢复，同时检查总览导航。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
 
-当前只有 0.163.0 的迁移配置经过验证。Sixel、Windows、tmux 和 Zellij 尚未完成本项目的实际显示验证，可先使用网页预览。
+0.163.0 与 0.165.0 各自固定官方标签提交；未知版本仍会在修改源码前停止。Sixel、Windows、tmux 和 Zellij 尚未完成本项目的实际显示验证，可先使用网页预览。
