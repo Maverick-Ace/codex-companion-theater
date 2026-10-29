@@ -17,6 +17,7 @@ class EffortAdapterTests(unittest.TestCase):
         (tui/'lib.rs').write_text('mod pets;\n')
         (tui/'app.rs').write_text('''        match &event {
             TuiEvent::FocusLost => {
+        tui.link_hover.observe(&event);
     fn render_chat_widget_frame(&mut self, tui: &mut tui::Tui, screen_size: Size) -> Result<Rect> {
                     if self.chat_widget.ambient_pet_image_enabled() {
 ''')
@@ -24,6 +25,7 @@ class EffortAdapterTests(unittest.TestCase):
         self.effort_tier = EffortTier::from_effort(effort);
         self.effort_observed = true;
         self.render_status_surface(status, buf, options);
+        self.render_voice_strip(composer_rect, buf);
             // Overlay rows must erase both glyphs and styles from the transcript underneath.
 ''')
         return tui

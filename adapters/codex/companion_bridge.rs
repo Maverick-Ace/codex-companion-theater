@@ -7,9 +7,73 @@ use std::time::{Duration, Instant};
 use ratatui::layout::Rect;
 use serde_json::{json, Value};
 
+// Pure input bookkeeping, also compiled independently by the adapter tests.
+mod pointer_state {
+    use std::collections::VecDeque;
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub(super) struct PointerEvent {
+        pub kind: &'static str,
+        pub x: f64,
+        pub y: f64,
+        pub button: u8,
+    }
+
+    #[derive(Default)]
+    pub(super) struct PointerInput {
+        pub events: VecDeque<PointerEvent>,
+        geometry: Option<(u16, u16, u16, u16)>,
+    }
+
+    impl PointerInput {
+        pub fn geometry(&mut self, value: (u16, u16, u16, u16)) {
+            if self.geometry != Some(value) {
+                self.leave();
+                self.geometry = Some(value);
+            }
+        }
+
+        pub fn coordinates(&self, column: u16, row: u16) -> Option<(f64, f64)> {
+            let (x, y, width, height) = self.geometry?;
+            if width == 0 || height == 0 { return None; }
+            Some(((f64::from(column) + 0.5 - f64::from(x)) / f64::from(width),
+                  (f64::from(row) + 0.5 - f64::from(y)) / f64::from(height)))
+        }
+
+        pub fn leave(&mut self) {
+            self.geometry = None;
+            self.events.clear();
+            self.events.push_back(PointerEvent { kind: "leave", x: 0.0, y: 0.0, button: 0 });
+        }
+
+        pub fn push(&mut self, event: PointerEvent) {
+            // Preserve crossings and direction changes for the shake recognizer.
+            // Under backpressure, discard old motion before any click boundaries.
+            if self.events.len() >= 64 {
+                if let Some(index) = self.events.iter().position(|item| item.kind == "move") {
+                    self.events.remove(index);
+                } else {
+                    // An excessive click burst must never leave a stuck button/attachment.
+                    self.events.clear();
+                    self.events.push_back(PointerEvent { kind: "leave", x: 0.0, y: 0.0, button: 0 });
+                }
+            }
+            self.events.push_back(event);
+        }
+
+        pub fn sent(&mut self, delivered: bool) {
+            if delivered { self.events.clear(); }
+        }
+    }
+}
+// End pointer_state.
+use pointer_state::{PointerEvent, PointerInput};
+
 struct Reply { value: Value, received: Instant }
 struct Bridge {
     composer: Option<Rect>,
+    cursor: Option<(u16, u16)>,
+    pointer: PointerInput,
     popup: bool,
     last_input: Option<Instant>,
     effort: Option<String>,
@@ -31,7 +95,7 @@ fn bridge() -> Option<&'static Mutex<Bridge>> {
                 let _ = responses.try_send(reply);
             }
         }).ok()?;
-        Some(Mutex::new(Bridge { composer: None, popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
+        Some(Mutex::new(Bridge { composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
     }).as_ref()
 }
 
@@ -55,7 +119,7 @@ pub(crate) fn enabled() -> bool { bridge().is_some() }
 
 pub(crate) fn begin_frame() {
     if let Some(lock) = bridge() {
-        if let Ok(mut b) = lock.lock() { b.composer = None; b.popup = false; }
+        if let Ok(mut b) = lock.lock() { b.composer = None; b.cursor = None; b.popup = false; }
     }
 }
 
@@ -68,6 +132,66 @@ pub(crate) fn record_composer(rect: Rect) {
 pub(crate) fn record_popup() {
     if let Some(lock) = bridge() {
         if let Ok(mut b) = lock.lock() { b.popup = true; }
+    }
+}
+
+/// Read the same rendered caret that upstream uses, never the editor's text.
+pub(crate) fn record_cursor(x: u16, y: u16) {
+    if let Some(lock) = bridge() {
+        if let Ok(mut b) = lock.lock() { b.cursor = Some((x, y)); }
+    }
+}
+
+pub(crate) fn note_key(key: &crossterm::event::KeyEvent) {
+    use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
+    if key.kind != KeyEventKind::Release
+        && !key.modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT | KeyModifiers::SUPER)
+        && matches!(key.code, KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete | KeyCode::Enter | KeyCode::Tab)
+    {
+        note_input();
+    }
+}
+
+/// Observe only; upstream still receives every mouse event for selection, links and scrolling.
+pub(crate) fn note_mouse(mouse: &crossterm::event::MouseEvent) {
+    use crossterm::event::{KeyModifiers, MouseButton, MouseEventKind};
+    let Some(lock) = bridge() else { return; };
+    let Ok(mut b) = lock.lock() else { return; };
+    if mouse.modifiers.contains(KeyModifiers::SHIFT) {
+        b.pointer.leave();
+        return;
+    }
+    let (kind, button) = match mouse.kind {
+        MouseEventKind::Moved | MouseEventKind::Drag(_) => ("move", 0),
+        MouseEventKind::Down(button) => ("down", match button { MouseButton::Left => 0, MouseButton::Middle => 1, MouseButton::Right => 2 }),
+        MouseEventKind::Up(button) => ("up", match button { MouseButton::Left => 0, MouseButton::Middle => 1, MouseButton::Right => 2 }),
+        _ => return,
+    };
+    if let Some((x, y)) = b.pointer.coordinates(mouse.column, mouse.row) {
+        let event = if !(-0.5..=1.5).contains(&x) || !(-1.0..=2.0).contains(&y) {
+            PointerEvent { kind: "leave", x: 0.0, y: 0.0, button: 0 }
+        } else {
+            PointerEvent { kind, x, y, button }
+        };
+        b.pointer.push(event);
+    }
+}
+
+fn send_hidden(b: &mut Bridge) -> bool {
+    b.pointer.leave();
+    b.latest = None;
+    let delivered = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":"hidden","visible":false,
+                           "pointer_events":[{"kind":"leave","x":0.0,"y":0.0,"button":0}]})).is_ok();
+    b.pointer.sent(delivered);
+    delivered
+}
+
+/// Release character attachments across modal/overview/focus/editor ownership changes.
+pub(crate) fn hide(requester: crate::tui::FrameRequester) {
+    if let Some(lock) = bridge() {
+        if let Ok(mut b) = lock.lock() {
+            if !send_hidden(&mut b) { requester.schedule_frame_in(Duration::from_millis(33)); }
+        }
     }
 }
 
@@ -101,8 +225,11 @@ pub(crate) fn frame(
     while let Ok(reply) = b.rx.try_recv() {
         b.latest = reply.map(|value| Reply {value, received: Instant::now()});
     }
-    let composer = b.composer?;
-    if hidden || b.popup || composer.y < 3 || screen.width < 60 { return None; }
+    let Some(composer) = b.composer else { send_hidden(&mut b); return None; };
+    if hidden || b.popup || composer.y < 3 || screen.width < 60 {
+        send_hidden(&mut b);
+        return None;
+    }
     // Read real terminal pixel dimensions, preserving natural sprite proportions.
     let window = crossterm::terminal::window_size().ok();
     let (cell_w, cell_h) = match window {
@@ -117,11 +244,19 @@ pub(crate) fn frame(
     let width_px = (f64::from(columns) * cell_w).round().clamp(80.0, 2560.0) as u16;
     let height_px = (f64::from(rows) * cell_h).round().clamp(48.0, 480.0) as u16;
     let key = format!("{x}:{y}:{columns}:{rows}:{width_px}:{height_px}");
+    b.pointer.geometry((x, y, columns, rows));
+    let cursor = b.cursor.and_then(|(column,row)| b.pointer.coordinates(column,row))
+        .map(|(x,y)| json!({"x":x,"y":y}));
+    let pointer_events: Vec<Value> = b.pointer.events.iter()
+        .map(|event| json!({"kind":event.kind,"x":event.x,"y":event.y,"button":event.button})).collect();
     let typing = b.last_input.is_some_and(|t| t.elapsed() < Duration::from_millis(900));
-    let _ = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":key,
+    let delivered = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":key,
         "visible":true,"width_px":width_px,"height_px":height_px,
         "model":model,"phase":if working {"working"} else {"idle"},"typing":typing,
-        "effort":b.effort,"effort_baseline":b.effort_baseline}));
+        "cursor":cursor,"pointer_events":pointer_events,
+        "effort":b.effort,"effort_baseline":b.effort_baseline})).is_ok();
+    // A full IPC mailbox retries the same click/motion sequence next frame.
+    b.pointer.sent(delivered);
     let latest = b.latest.as_ref()?;
     if latest.received.elapsed() > Duration::from_millis(800)
         || latest.value.get("layout_key")?.as_str()? != key

@@ -1,6 +1,7 @@
 """One local world per launcher, with Unix JSON v1 and optional loopback preview."""
 import io
 import json
+import math
 import os
 from pathlib import Path
 import socket
@@ -13,6 +14,51 @@ from .world import World, CAST, NAMES, SCENES, PERSONALITIES
 from .render import Renderer, ROOT
 
 MAX_MESSAGE = 65536
+
+def display_point(value, *, cursor=True):
+    """Validate coordinate-only metadata before applying an input batch."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("invalid display coordinates")
+    result = {}
+    for field in ('x', 'y'):
+        number = value.get(field)
+        if isinstance(number, bool) or not isinstance(number, (int, float)):
+            raise ValueError("invalid display coordinates")
+        try:
+            number = float(number)
+        except OverflowError as exc:
+            raise ValueError("invalid display coordinates") from exc
+        if not math.isfinite(number):
+            raise ValueError("invalid display coordinates")
+        low, high = (-32.0, 32.0) if cursor else (-2.0, 3.0)
+        if not low <= number <= high:
+            raise ValueError("display coordinates outside stage limits")
+        result[field] = float(number)
+    return result
+
+def pointer_batch(events):
+    if not isinstance(events, list) or len(events) > 64:
+        raise ValueError("invalid pointer event batch")
+    result = []
+    for event in events:
+        if not isinstance(event, dict) or event.get('kind') not in ('move', 'down', 'up', 'leave'):
+            raise ValueError("invalid pointer event")
+        point = display_point(event, cursor=False) if event['kind'] != 'leave' else {'x': 0.0, 'y': 0.0}
+        button = event.get('button', 0)
+        if isinstance(button, bool) or not isinstance(button, int) or button not in (0, 1, 2):
+            raise ValueError("invalid pointer button")
+        result.append(dict(point, kind=event['kind'], button=button))
+    return result
+
+def frame_dimensions(message):
+    width, height = message['width_px'], message['height_px']
+    if (isinstance(width, bool) or isinstance(height, bool)
+            or not isinstance(width, int) or not isinstance(height, int)
+            or not (80 <= width <= 2560 and 48 <= height <= 480)):
+        raise ValueError("invalid frame dimensions")
+    return width, height
 
 def live_instances():
     """Read the same v1 registry as the independently packaged MCP control client."""
@@ -56,12 +102,22 @@ class Theater:
 
     def command(self, message):
         with self.lock:
+            if not isinstance(message, dict):
+                raise ValueError("command must be a JSON object")
             if message.get("v", 1) != 1:
                 raise ValueError("unsupported protocol version")
             self.advance()
             op = message.get("op", "status")
             if op == "layout":
                 # The TUI sends only display metadata; never a draft or conversation.
+                key = str(message["layout_key"])
+                if not message.get("visible", True):
+                    self.world.pointer('leave', 0, 0)
+                    return {"v":1,"visible":False,"layout_key":key}
+                width, height = frame_dimensions(message)
+                cursor = display_point(message.get('cursor'))
+                events = pointer_batch(message.get('pointer_events', []))
+                self.world.set_geometry(width, height)
                 if message.get("effort") is not None:
                     incoming = (message["effort"], bool(message.get("effort_baseline")))
                     if incoming != self.native_effort:
@@ -69,13 +125,9 @@ class Theater:
                         baseline = self.native_effort is None or incoming[1]
                         self.world.set_effort(incoming[0], baseline=baseline)
                         self.native_effort = incoming
-                self.world.activity(message.get("phase"), message.get("model"), message.get("typing",False))
-                key = str(message["layout_key"])
-                if not message.get("visible", True):
-                    return {"v":1,"visible":False,"layout_key":key}
-                width, height = int(message["width_px"]), int(message["height_px"])
-                if not (80 <= width <= 2560 and 48 <= height <= 480):
-                    raise ValueError("invalid frame dimensions")
+                self.world.activity(message.get("phase"), message.get("model"), message.get("typing",False), cursor=cursor)
+                for event in events:
+                    self.world.pointer(**event)
                 image = self.renderer.frame(self.world.snapshot(), width, height)
                 # A bounded ring. Atomic rename prevents the CLI reading an incomplete PNG.
                 self.frame_id += 1
@@ -102,11 +154,18 @@ class Theater:
             elif op == "effort":
                 self.world.set_effort(message["value"])
             elif op == "activity":
+                cursor = display_point(message.get('cursor'))
                 event = message.get("event")
                 phase = {"UserPromptSubmit":"working", "PreToolUse":"working", "PermissionRequest":"waiting",
                          "Stop":"ready", "Interrupt":"idle", "SessionStart":"idle"}.get(event, message.get("phase"))
                 self.world.activity(phase, message.get("model"), message.get("typing",False),
-                                    effort=message.get("effort"))
+                                    effort=message.get("effort"), cursor=cursor)
+            elif op == "pointer":
+                events = pointer_batch(message.get('events', [message]))
+                if 'width_px' in message or 'height_px' in message:
+                    self.world.set_geometry(*frame_dimensions(message), labels=bool(message.get('labels', False)))
+                for event in events:
+                    self.world.pointer(**event)
             elif op not in ("status","catalog","hello"):
                 raise ValueError("unknown command")
             return {"v":1,"ok":True,"state":self.world.snapshot(),"geometry":self.last_geometry,
@@ -152,11 +211,17 @@ def make_http(theater, port):
                 self.send(json.dumps(theater.command({"op":"status"}),ensure_ascii=False).encode())
             elif parsed.path == "/api/frame":
                 args = parse_qs(parsed.query)
-                w = max(400,min(1600,int(args.get("w",[1200])[0])))
+                try:
+                    w = max(400,min(1600,int(args.get("w",[1200])[0])))
+                    h = max(80,min(480,int(args.get("h",[220])[0])))
+                except (ValueError, OverflowError):
+                    self.send(b'{"error":"invalid frame dimensions"}',code=400)
+                    return
                 with theater.lock:
                     theater.advance()
                     labels = args.get("labels", ["0"])[0] == "1"
-                    im = theater.renderer.frame(theater.world.snapshot(),w,220,labels=labels)
+                    theater.world.set_geometry(w,h,labels=labels)
+                    im = theater.renderer.frame(theater.world.snapshot(),w,h,labels=labels)
                     data=io.BytesIO();im.save(data,format="PNG",compress_level=1)
                 self.send(data.getvalue(),"image/png")
             elif parsed.path.startswith("/portrait/"):
@@ -175,10 +240,10 @@ def make_http(theater, port):
                 self.send(b"not found","text/plain",404);return
             try:
                 n=int(self.headers.get("Content-Length",0))
-                if n>MAX_MESSAGE:raise ValueError("message too large")
+                if not 0 <= n <= MAX_MESSAGE:raise ValueError("invalid message length")
                 reply=theater.command(json.loads(self.rfile.read(n)))
                 self.send(json.dumps(reply,ensure_ascii=False).encode())
-            except (ValueError,KeyError,OSError) as exc:
+            except (ValueError,KeyError,OSError,TypeError) as exc:
                 self.send(json.dumps({"error":str(exc)}).encode(),code=400)
     return ThreadingHTTPServer(("127.0.0.1",port),Handler)
 

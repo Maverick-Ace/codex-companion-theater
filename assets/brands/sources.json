@@ -1,0 +1,176 @@
+{
+  "retrieved": "2026-10-29",
+  "characters": {
+    "gpt": {
+      "label": "OpenAI Blossom",
+      "file": "gpt.png",
+      "kind": "official_site_mark",
+      "page": "https://openai.com/brand/",
+      "source": "https://cdn.openai.com/brand/OpenAI-Logos-2025.zip",
+      "sha256": "fa522b050a641b7470451ca896b173990152ccd831028689976a8c407d119ab0",
+      "accent": "#a9c0bc",
+      "effect": "orbit",
+      "archive_member": "OpenAI-logos(new)/PNGs/OpenAI-black-monoblossom.png"
+    },
+    "claude": {
+      "label": "Anthropic",
+      "file": "claude.png",
+      "kind": "official_site_mark",
+      "page": "https://www.anthropic.com/",
+      "source": "https://www.anthropic.com/favicon.ico",
+      "sha256": "6e37a0c28cd95f4bc4cc1e187b6dfcf5e49f534e60d8da12416792cf09cad668",
+      "accent": "#d89371",
+      "effect": "rays"
+    },
+    "gemini": {
+      "label": "Google Gemini",
+      "file": "gemini.png",
+      "kind": "official_site_mark",
+      "page": "https://gemini.google.com/",
+      "source": "https://www.gstatic.com/lamda/images/gemini_sparkle_4g_512_lt_f94943af3be039176192d.png",
+      "sha256": "617646e617a7f0b556e560326c89176b883e49cffd59c384ed65428bdd5fc418",
+      "accent": "#77a8f9",
+      "effect": "pixels"
+    },
+    "deepseek": {
+      "label": "DeepSeek",
+      "file": "deepseek.png",
+      "kind": "official_site_mark",
+      "page": "https://www.deepseek.com/",
+      "source": "https://www.deepseek.com/favicon.ico",
+      "sha256": "ed13f52145ca586540ffa9ebec0486a40fdc5e6b3e85c4f53e72b2b29b2ccaa8",
+      "accent": "#6a86ff",
+      "effect": "orbit"
+    },
+    "qwen": {
+      "label": "Qwen",
+      "file": "qwen.png",
+      "kind": "official_site_mark",
+      "page": "https://qwen.ai/",
+      "source": "https://img.alicdn.com/imgextra/i4/O1CN01OXv3EM1FN8t9W4P79_!!6000000000474-2-tps-80-80.png",
+      "sha256": "f85d40e9a425a1600cb5d596a62c7dc1a6feb3ce4a12ebeb7b46bf98a9403851",
+      "accent": "#8b7af5",
+      "effect": "rays"
+    },
+    "llama": {
+      "label": "Meta",
+      "file": "llama.png",
+      "kind": "official_site_mark",
+      "page": "https://www.llama.com/",
+      "source": "https://dev.meta.ai/favicon.ico?favicon.0__pei86aoyzg.ico",
+      "sha256": "ce76d07fe7a21bcffe6ed0332942f8dfd0bd0b7cc00767865343edf3717d41b2",
+      "accent": "#69a8f5",
+      "effect": "pixels"
+    },
+    "seed": {
+      "label": "ByteDance",
+      "file": "seed.png",
+      "kind": "official_site_mark",
+      "page": "https://seed.bytedance.com/",
+      "source": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/favicon_1/favicon.ico",
+      "sha256": "bb5fe321bf2c5396a7b8dc3c53bb3bd4c170ab51ed33f8a08fe881c3fceb9000",
+      "accent": "#62cfca",
+      "effect": "orbit"
+    },
+    "grok": {
+      "label": "xAI",
+      "file": "grok.png",
+      "kind": "official_site_mark",
+      "page": "https://x.ai/",
+      "source": "https://x.ai/favicon.ico",
+      "sha256": "07282b70484b0fa8a0a4c03b9efdd31721e1e4586bcbfb05aa46770a10ab5be9",
+      "accent": "#c2ccdc",
+      "effect": "rays"
+    },
+    "kimi": {
+      "label": "Kimi / Moonshot",
+      "file": "kimi.png",
+      "kind": "official_site_mark",
+      "page": "https://www.kimi.com/",
+      "source": "https://www.kimi.com/favicon.ico",
+      "sha256": "bf27502b90285e54627f28ff99dcfd0496b92e1e10a29f1f1ba8b820bacf684d",
+      "accent": "#8babef",
+      "effect": "pixels"
+    },
+    "minimax": {
+      "label": "MiniMax",
+      "file": "minimax.png",
+      "kind": "official_site_mark",
+      "page": "https://www.minimax.io/",
+      "source": "https://www.minimax.io/favicon.ico",
+      "sha256": "0c5fb3ef6fdd689c2f502800e6fe2a84dc1abe9a2b6dffbe02b0085030dea60d",
+      "accent": "#f394ad",
+      "effect": "orbit"
+    },
+    "rwkv": {
+      "label": "RWKV",
+      "file": "rwkv.png",
+      "kind": "official_site_mark",
+      "page": "https://www.rwkv.com/",
+      "source": "https://www.rwkv.com/apple-touch-icon.png",
+      "sha256": "2cb06894a07d9dd1b1fd2dde3aeddd362f2621d38d482147b3bcf4f758c39072",
+      "accent": "#b895e8",
+      "effect": "rays"
+    },
+    "perplexity": {
+      "label": "Perplexity",
+      "file": "perplexity.png",
+      "kind": "official_site_mark",
+      "page": "https://www.perplexity.ai/",
+      "source": "https://www.perplexity.ai/favicon.ico",
+      "sha256": "4c7994b154166264ef0279e706e9161e54d95f44b2af279d374f3561f27cf3f4",
+      "accent": "#62b9bb",
+      "effect": "pixels"
+    },
+    "mistral": {
+      "label": "Mistral AI",
+      "file": "mistral.png",
+      "kind": "official_site_mark",
+      "page": "https://mistral.ai/",
+      "source": "https://mistral.ai/favicon.ico",
+      "sha256": "c53880572313a65a001ce13b1932a174a45697df354b710f70c4ae1704d9e25f",
+      "accent": "#f7a34b",
+      "effect": "orbit"
+    },
+    "glm": {
+      "label": "Z.ai / Zhipu",
+      "file": "glm.png",
+      "kind": "official_site_mark",
+      "page": "https://z.ai/",
+      "source": "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+      "sha256": "3a84050ee1f1f9a98b0ffa100b646f4f4efe563e1936ec6f8424148934d102f5",
+      "accent": "#9dace4",
+      "effect": "rays"
+    },
+    "wenxin": {
+      "label": "Baidu",
+      "file": "wenxin.png",
+      "kind": "official_site_mark",
+      "page": "https://yiyan.baidu.com/",
+      "source": "https://www.baidu.com/favicon.ico",
+      "sha256": "03ac5a691ad84731658aa412864e9e924622278b342ad48096680645a482abe9",
+      "accent": "#7c8cfa",
+      "effect": "pixels"
+    },
+    "hunyuan": {
+      "label": "Tencent Hunyuan",
+      "file": "hunyuan.png",
+      "kind": "official_site_mark",
+      "page": "https://hunyuan.tencent.com/",
+      "source": "https://hunyuan-blog-web-prod-1258344703.cos.ap-guangzhou.myqcloud.com/favicon.png",
+      "sha256": "3e535f74c60c0c2a02c26d719683b0bfb3a681c4253e74dc566b7b523259e1de",
+      "accent": "#5dc0ea",
+      "effect": "orbit"
+    },
+    "jev": {
+      "label": "JEV local character monogram",
+      "file": "jev.png",
+      "kind": "local_monogram",
+      "page": "https://genderswapai.com/zh-CN/ai-gijinka/jev",
+      "source": null,
+      "sha256": "585422da1ba0c59a7e4162c03da4424611566c6c05b00a14d4866d7292e3ef20",
+      "accent": "#e4a2d1",
+      "effect": "rays"
+    }
+  }
+}

@@ -7,7 +7,9 @@ from .motion import PuppetRig
 from .stagecraft import power_backdrop, power_foreground, scene_details
 from .scenery import draw_set
 from .hand_props import draw_held, engagement
-from .props import position
+from .geometry import stage_metrics, stage_position
+from .attention_render import accents
+from .brands import draw_brand_portal
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
@@ -20,19 +22,6 @@ def composite_clipped(canvas, sprite, x, y):
     right,bottom=min(canvas.width,x+sprite.width),min(canvas.height,y+sprite.height)
     if right>left and bottom>top:
         canvas.alpha_composite(sprite.crop((left-x,top-y,right-x,bottom-y)),(left,top))
-
-def portal(draw,x,floor,size,progress,seed):
-    strength=math.sin(math.pi*max(0,min(1,progress)))
-    radius=max(2,int(size*.42*strength))
-    color=(195,159,255,int(230*strength))
-    draw.ellipse((x-radius,floor-7,x+radius,floor+1),outline=color,width=2)
-    for n in range(18):
-        angle=n*2.399+seed
-        spread=(.12+((n*17)%19)/28)*size*strength
-        px=x+math.cos(angle+progress*2)*spread*.65
-        py=floor-size*(progress*.8+(n%5)*.035)
-        r=1+(n%3==0)
-        draw.ellipse((px-r,py-r,px+r,py+r),fill=(218,198,255,int(220*strength)))
 
 class Renderer:
     def __init__(self, assets=None):
@@ -88,40 +77,40 @@ class Renderer:
         canvas = Image.new("RGBA", (width, height))
         draw = ImageDraw.Draw(canvas)
         scale = min(1.5, height / 170)
-        size = max(38, min(int(height * .72), int(width / (len(state["cast"])+1) * .85)))
-        floor = height - (int(19 * scale) if labels else 2)
         t = state["time"]
         quiet = state["quiet"]
         still = state["reduced_motion"] or quiet
         effect = state.get('spectacle')
         ensemble = bool(effect and effect['kind'] == 'ultra')
-        if ensemble:
-            size = max(18, min(int(height*.43), int(width/9*.88)))
+        size, floor = stage_metrics(len(state['cast']), width, height, labels, ensemble)
         draw_set(canvas,state,floor,size)
         def placement(a, index):
-            if ensemble and 'departure' not in a:
-                row, column = (0,index) if index<8 else (1,index-8)
-                count=8 if row==0 else 9
-                return int((column+1)*width/(count+1)), floor-int(size*.58) if row==0 else floor, int(size*.9) if row==0 else size
-            return position(a['x'],width,size),floor,size
+            return stage_position(a, index, len(state['cast']), width, size, floor, ensemble)
         positions=[placement(a,i) for i,a in enumerate(state['cast'])]
         power_backdrop(canvas,state,floor,size,positions)
         actors=([] if ensemble else state.get('departing',[]))+state['cast']
         for i, a in enumerate(actors):
             index=next((j for j,item in enumerate(state['cast']) if item['id']==a['id']),0)
             x, actor_floor, actor_size = placement(a,index)
+            actor_still = state['reduced_motion'] or (quiet and not a.get('attention'))
             contact=a.get('interaction')
             if contact and contact['active'] and contact['action']=='sit' and a['id']!='wenxin' and not still:
                 actor_floor-=round(20*max(.65,min(1.8,actor_size/110))*engagement(contact['progress']))
-            sprite = self.sprite(a, t, actor_size, still=still)
+            sprite = self.sprite(a, t, actor_size, still=actor_still)
             bob = 0 if state["reduced_motion"] or quiet else (math.sin(t*2.4+i) * .8)
             if a.get('gesture') == 'bounce' and not still:
                 bob -= max(0, math.sin(t*3.8*a.get('tempo',1)+i))*4*scale
             if state["scene"] in ("celebrate","power_max","power_ultra") and not still:
                 bob -= max(0, math.sin(state["scene_age"] * 5 + i)) * 7 * scale
             # Mesh padding is transparent and must not lift the character off the floor.
-            pad = max(3,round(actor_size*.055)) if not still else 0
+            pad = max(3,round(actor_size*.055)) if not actor_still else 0
             y = actor_floor - sprite.height + pad + int(bob)
+            reaction = a.get('reaction')
+            if reaction and not state['reduced_motion']:
+                y -= round(reaction.get('lift', 0) * actor_size)
+                if reaction.get('tilt'):
+                    sprite = sprite.rotate(reaction['tilt'], resample=Image.Resampling.BICUBIC, expand=True)
+                    y = actor_floor - sprite.height + pad - round(reaction.get('lift', 0) * actor_size)
             active_portal=False
             if not state['reduced_motion'] and not quiet:
                 if 'departure' in a:
@@ -135,17 +124,21 @@ class Renderer:
                 if active_portal:
                     sprite=sprite.copy()
                     sprite.putalpha(sprite.getchannel('A').point(lambda p:int(p*opacity)))
-                    portal(draw,x,actor_floor,actor_size,progress,i*.7)
+                    # Outgoing and incoming marks take turns even when their
+                    # characters occupy the same position during a cast switch.
+                    mark_progress = progress / .4 if 'departure' in a else (progress - .4) / .6
+                    draw_brand_portal(canvas,a['id'],x,actor_floor,actor_size,mark_progress,i*.7)
             elif 'departure' in a:
                 continue
             partners=[p for p in state['cast'] if p['id'] in state.get('pair',[])]
-            if state['scene']=='whisper' and a['id'] in state.get('pair',[]) and len(partners)==2 and abs(partners[0]['x']-partners[1]['x'])<.14 and not quiet and not state['reduced_motion']:
+            if state['scene']=='whisper' and a['id'] in state.get('pair',[]) and len(partners)==2 and abs(partners[0]['x']-partners[1]['x'])<.14 and not quiet and not state['reduced_motion'] and not a.get('reaction') and not a.get('attention'):
                 partner=state['pair'].index(a['id'])
                 angle=(7 if partner==0 else -7)*(.65+.35*math.sin(t*3))
                 sprite=sprite.rotate(-angle,resample=Image.Resampling.BICUBIC,expand=True)
                 y=actor_floor-sprite.height+pad
             composite_clipped(canvas,sprite,x-sprite.width//2,y)
             if 'departure' in a:continue
+            accents(canvas,state,a,x,actor_floor,actor_size,still=actor_still)
             if not active_portal:
                 draw_held(canvas,state,a,x,actor_floor,actor_size)
             if labels:

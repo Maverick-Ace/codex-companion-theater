@@ -17,7 +17,7 @@ def joint_motion(actor, t):
     phase = t * float(actor.get('tempo', 1)) * 2.8
     gesture = actor.get('gesture', 'sway')
     walking = actor['pose'].startswith('walk')
-    gait = actor.get('travel', 0) * 65 if walking else phase * .38
+    gait = actor.get('travel', 0) * (90 if gesture == 'run' else 65) if walking else phase * .38
     facing = actor.get('facing', 1)
     lift = .025 if gesture in ('wave', 'clap', 'reach') else .008
     if gesture == 'type':
@@ -33,9 +33,18 @@ def joint_motion(actor, t):
         ('foot_left', .42, .83, .12, .14, math.sin(gait)*.08 if walking else 0, math.sin(gait)*.008 if walking else 0, -max(0,math.sin(gait))*.010 if walking else 0),
         ('foot_right', .58, .83, .12, .14, -math.sin(gait)*.08 if walking else 0, -math.sin(gait)*.008 if walking else 0, -max(0,-math.sin(gait))*.010 if walking else 0),
     ]
-    if gesture in ('nod', 'think', 'peek'):
+    if gesture in ('nod', 'think', 'peek', 'curious'):
         name,x,y,rx,ry,angle,dx,dy=joints[0]
         joints[0]=(name,x,y,rx,ry,angle+math.sin(phase*1.3)*.035*facing,dx,dy+.006*math.sin(phase*1.3))
+        if gesture == 'curious':
+            joints[0]=(name,x,y,rx,ry,angle+.045*facing,dx,dy-.004)
+    attention = actor.get('attention')
+    if attention:
+        name,x,y,rx,ry,angle,dx,dy=joints[0]
+        look_up = attention.get('look_up')
+        tilt = -.055 * facing if look_up else .07 * facing
+        # Turn toward the input, then occasionally lift the head toward output.
+        joints[0] = (name,x,y,rx,ry,angle + tilt,dx + facing * .006,dy + (-.008 if look_up else .007))
     result=[]
     for name,x,y,rx,ry,angle,dx,dy in joints:
         side = 1 if name == 'arm_left' else -1
@@ -59,6 +68,26 @@ def joint_motion(actor, t):
             elif gesture == 'wave' and side == -1:
                 angle += math.sin(phase * 2) * .15
                 dy -= .024
+            elif gesture in ('catch', 'hang'):
+                dy -= .075
+                dx += side * .022
+                angle += side * .22
+            elif gesture.startswith('observe_') or gesture == 'look_up':
+                style = attention.get('style', 'chin') if attention else 'chin'
+                if style == 'chin' and side == -facing:
+                    dx += facing * .025
+                    dy -= .028
+                    angle += facing * .15
+                elif style == 'lean':
+                    dx += facing * .014
+                    dy += .015
+                elif style == 'crouch':
+                    dy += .018
+                elif style == 'peek':
+                    dy -= .018
+            elif gesture in ('shy', 'wink'):
+                dx += side * .013
+                dy -= .012
         override=profile.get(name,{})
         if override.get('locked'):
             continue

@@ -5,7 +5,7 @@
 :root{color-scheme:dark;--ink:#f0eafa;--muted:#afa3c0;--line:#3e344e;--accent:#d4b5fa}*{box-sizing:border-box}body{margin:0;background:#17141d;color:var(--ink);font:15px/1.6 system-ui,"Noto Sans CJK SC",sans-serif}main{max-width:1320px;margin:auto;padding:40px 30px}header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}h1{font-family:serif;font-size:36px;font-weight:500;letter-spacing:.05em;margin:6px 0 8px}.eyebrow{color:var(--accent);letter-spacing:.2em;font-size:11px}p{color:var(--muted);margin:0}button,select{font:inherit;color:inherit;background:#292331;border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}button:hover{background:#3c2d4d;border-color:#9876b7}button.active{color:#23182f;background:#d4b5fa}.top{display:flex;gap:8px;flex-wrap:wrap}.stage{margin:30px 0 20px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 55% 65%,#34293e,transparent 62%),#1e1926}.terminal-head{padding:11px 18px;color:#8c819c;background:#211c29;display:flex;justify-content:space-between;font:12px ui-monospace,monospace}.transcript{padding:20px 24px 0;color:#bcb1cb;font:14px/1.8 ui-monospace,monospace;min-height:90px}.transcript b{color:#d5b4f2}.actors{height:240px;display:flex;align-items:end}.actors img{width:100%;height:220px;object-fit:contain;image-rendering:auto}.composer{border-top:1px solid #71617e;border-bottom:1px solid #51435d;background:#2c2435;padding:15px 24px;display:flex;gap:14px;align-items:center}.composer span{color:#ddc0ff}.composer input{font:inherit;flex:1;min-width:0;color:var(--ink);background:none;border:0;outline:0}.footer{font:12px ui-monospace,monospace;color:#8c819c;padding:8px 24px}.toolbar{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:28px}.scenes{display:flex;gap:8px;flex-wrap:wrap}.caption{font-size:12px;color:#8f819e}.roster-head{display:flex;align-items:baseline;justify-content:space-between}h2{font-size:19px;font-weight:500;margin:0 0 14px}.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:10px}.character{padding:8px 4px 12px;text-align:center;border-radius:11px;background:#211b2a}.character img{display:block;width:100%;height:112px;object-fit:contain}.character.selected{border-color:#c39ae8;background:#362742}.character small{color:#a699b3;display:block;font-size:10px}.character .trait{color:#d1badf;font-size:10px;margin-top:3px}.effort{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.feedback{min-height:22px;margin-top:8px;font-size:12px;color:#edb8c7}.note{margin-top:22px;font-size:12px;line-height:1.8;max-width:950px}@media(max-width:700px){main{padding:25px 14px}header{display:block}h1{font-size:28px}.top{margin-top:18px}.actors{height:195px}.actors img{height:185px}.transcript{min-height:75px}.roster{grid-template-columns:repeat(4,1fr)}.character img{height:85px}}
 </style>
 <main><header><div><div class="eyebrow">COMPANION THEATER / LOCAL EDITION</div><h1>光标旁，热闹一点。</h1><p>她们有自己的小日常，也会安静陪你写完这一行。</p></div><div class="top"><button id="pause">暂停</button><button id="motion">轻柔模式</button><button id="labels" aria-pressed="false">显示名字</button><label class="effort">思考强度<select id="effort" aria-label="思考强度"><option value="">未设置</option><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max · 小队共鸣</option><option value="ultra">ultra · 全员庆典</option></select></label><select id="phase" aria-label="任务状态"><option value="idle">自由活动</option><option value="working">正在工作</option><option value="waiting">等待批准</option><option value="ready">任务完成</option></select></div></header>
-<div class="stage"><div class="terminal-head"><span>● ● ●　codex / companion theater</span><span id="status">自由活动</span></div><div class="transcript"><b>›</b> 今天一起把这个想法做出来吧。<br><span style="color:#82738f">小伙伴们正在输入框边沿散步……</span></div><div class="actors"><img id="frame" alt="小伙伴们的实时场景"></div><label class="composer"><span>›</span><input id="draft" placeholder="在这里试着输入，她们会安静一点……" autocomplete="off"></label><div class="footer">本地情景对白 · 不发送输入内容 · 不调用模型 API</div></div>
+<div class="stage"><div class="terminal-head"><span>● ● ●　codex / companion theater</span><span id="status">自由活动</span></div><div class="transcript"><b>›</b> 今天一起把这个想法做出来吧。<br><span style="color:#82738f">从头顶划过逗逗她们；被抓住时左右抖一抖鼠标。</span></div><div class="actors"><img id="frame" alt="小伙伴们的实时场景，可用鼠标轻触或从头顶划过" draggable="false"></div><label class="composer"><span>›</span><input id="draft" placeholder="试着输入，她们会跑来一起琢磨……" autocomplete="off"></label><div class="footer">点击打招呼 · 划过头顶试试抓鼠标 · 左右轻抖放下 · 输入内容留在本地</div></div>
 <div class="toolbar"><div class="scenes" id="scenes"></div><div><span class="caption">同时登场 </span><select id="density" aria-label="登场人数"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option></select></div></div>
 <p id="feedback" class="feedback" role="status" aria-live="polite"></p><div class="roster-head"><h2>今天，谁来陪你？</h2><span class="caption">点选角色组成候场队伍 · 17 位伙伴</span></div><div class="roster" id="roster"></div><p class="note">这是与 CLI 共用同一动作引擎的本地预览。角色参考 AI Gijinka 社区设定，Q 版动作图为生成素材；对白是为这个剧场编写的情景短句。每位角色的性格与对白是结合模型特点创作的剧场人设。max 使用当前队伍演出，ultra 让全员短暂登场，结束后恢复原队伍。角色并未分别连接各家模型。原设作者和来源记录在项目素材目录中。</p></main>
 <script>
@@ -70,9 +70,12 @@ function animate(){
     busy=false;
     frameTimer=setTimeout(animate,Math.max(0,33-(performance.now()-started)));
   }
-  im.onload=()=>{$('#frame').src=im.src;complete()};
+  const frameLabels=showNames;
+  im.onload=()=>{$('#frame').src=im.src;$('#frame').dataset.labels=String(frameLabels);complete()};
   im.onerror=complete;
-  im.src='/api/frame?w='+Math.min(1500,Math.round($('.actors').clientWidth*devicePixelRatio))+'&labels='+(showNames?'1':'0')+'&t='+Date.now();
+  const box=$('#frame').getBoundingClientRect();
+  const ratio=Math.min(devicePixelRatio||1,1500/box.width,480/box.height);
+  im.src='/api/frame?w='+Math.max(400,Math.round(box.width*ratio))+'&h='+Math.max(80,Math.round(box.height*ratio))+'&labels='+(showNames?'1':'0')+'&t='+Date.now();
 }
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&!busy){clearTimeout(frameTimer);animate()}
@@ -83,7 +86,82 @@ $('#labels').onclick=()=>{showNames=!showNames;$('#labels').classList.toggle('ac
 $('#phase').onchange=e=>send({op:'activity',phase:e.target.value});
 $('#effort').onchange=e=>{if(e.target.value)send({op:'effort',value:e.target.value})};
 $('#density').onchange=e=>send({op:'density',value:+e.target.value});
-$('#draft').oninput=()=>send({op:'activity',typing:true});
+// Pointer and caret messages contain coordinates only. Draft text stays in the input.
+function imageBounds(){
+  const im=$('#frame'),rect=im.getBoundingClientRect();
+  const w=im.naturalWidth||rect.width,h=im.naturalHeight||rect.height;
+  const scale=Math.min(rect.width/w,rect.height/h);
+  return {left:rect.left+(rect.width-w*scale)/2,top:rect.top+(rect.height-h*scale)/2,
+          width:w*scale,height:h*scale,width_px:Math.round(w),height_px:Math.round(h)};
+}
+const measure=document.createElement('canvas').getContext('2d');
+function caretPoint(){
+  const input=$('#draft'),rect=input.getBoundingClientRect(),style=getComputedStyle(input),box=imageBounds();
+  measure.font=style.font;
+  const caret=input.selectionDirection==='backward'?input.selectionStart:input.selectionEnd;
+  const prefix=input.value.slice(0,caret||0);
+  const spacing=parseFloat(style.letterSpacing)||0;
+  const offset=measure.measureText(prefix).width+Array.from(prefix).length*spacing-input.scrollLeft;
+  const inset=(parseFloat(style.borderLeftWidth)||0)+(parseFloat(style.paddingLeft)||0);
+  const right=(parseFloat(style.borderRightWidth)||0)+(parseFloat(style.paddingRight)||0);
+  const x=rect.left+inset+Math.max(0,Math.min(rect.width-inset-right,offset));
+  return {x:(x-box.left)/box.width,y:(rect.top+rect.height/2-box.top)/box.height};
+}
+function typing(){send({op:'activity',typing:true,cursor:caretPoint()})}
+$('#draft').oninput=typing;
+$('#draft').addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key))typing()});
+$('#draft').addEventListener('click',typing);
+$('#draft').addEventListener('select',typing);
+$('#draft').addEventListener('scroll',()=>{if(document.activeElement===$('#draft'))typing()});
+let pointerQueue=[],pointerGeometry=null,pointerBusy=false,pointerTimer=null;
+async function flushPointer(){
+  pointerTimer=null;
+  if(pointerBusy||!pointerQueue.length)return;
+  const events=pointerQueue.splice(0,64);pointerBusy=true;
+  const data={op:'pointer',events,...pointerGeometry};
+  try{await command(data)}catch(error){report(error)}finally{
+    pointerBusy=false;
+    if(pointerQueue.length)pointerTimer=setTimeout(flushPointer,16);
+  }
+}
+function pointerMessage(event,kind){
+  const box=imageBounds();
+  pointerGeometry={width_px:box.width_px,height_px:box.height_px,labels:$('#frame').dataset.labels==='true'};
+  return {kind,x:(event.clientX-box.left)/box.width,y:(event.clientY-box.top)/box.height,
+          button:event.button===2?2:0};
+}
+function queuePointer(event,immediate=false){
+  const last=pointerQueue.at(-1),prior=pointerQueue.at(-2);
+  // Collapse only straight travel: turning points carry the shake gesture.
+  const straight=event.kind==='move'&&last?.kind==='move'&&prior?.kind==='move'
+    &&(last.x-prior.x)*(event.x-last.x)>=0&&(last.y-prior.y)*(event.y-last.y)>=0;
+  if(straight)pointerQueue[pointerQueue.length-1]=event;
+  else pointerQueue.push(event);
+  // Keep recent turns and every click/release/leave if a slow request backs up.
+  while(pointerQueue.length>128){
+    const oldestMove=pointerQueue.findIndex(item=>item.kind==='move');
+    if(oldestMove<0)break;
+    pointerQueue.splice(oldestMove,1);
+  }
+  if(immediate&&!pointerBusy){clearTimeout(pointerTimer);flushPointer()}
+  else if(!pointerTimer&&!pointerBusy)pointerTimer=setTimeout(flushPointer,16);
+}
+const frame=$('#frame');
+frame.addEventListener('pointermove',event=>{
+  if(event.pointerType==='touch')return;
+  queuePointer(pointerMessage(event,'move'));
+});
+for(const [name,kind] of [['pointerdown','down'],['pointerup','up']]){
+  frame.addEventListener(name,event=>{
+    if(event.button!==0)return;
+    queuePointer(pointerMessage(event,kind),true);
+  });
+}
+function leavePointer(){queuePointer({kind:'leave'},true)}
+frame.addEventListener('pointerleave',leavePointer);
+frame.addEventListener('pointercancel',leavePointer);
+window.addEventListener('blur',leavePointer);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)leavePointer()});
 let polling=false;
 setInterval(async()=>{
   if(document.hidden||polling)return;

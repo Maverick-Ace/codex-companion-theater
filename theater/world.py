@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from .props import interaction_slots, POSITIONS
 from .scenery import SetTransition
+from .attention import Attention
 
 ROOT = Path(__file__).resolve().parents[1]
 _catalog = json.loads((ROOT / "assets/cast/catalog.json").read_text())["characters"]
@@ -41,6 +42,8 @@ class Actor:
     tempo: float = 1.0
     accent: str = "#c7b7ff"
     interaction: dict | None = None
+    reaction: dict | None = None
+    attention: dict | None = None
 
 class World:
     def __init__(self, seed=7, cast=None, density=4):
@@ -76,7 +79,22 @@ class World:
         self._interaction_plans = {}
         self._interaction_round = 0
         self._next_interaction = 0.0
+        self.attention = Attention()
         self._populate(self.pool[:self.density])
+
+    def set_geometry(self, width, height, labels=False):
+        if not (80 <= int(width) <= 2560 and 48 <= int(height) <= 480):
+            raise ValueError('invalid stage geometry')
+        self.attention.geometry(width, height, labels)
+
+    def pointer(self, kind, x=0.0, y=0.0, button=0):
+        if kind not in ('move', 'down', 'up', 'leave'):
+            raise ValueError('unknown pointer event')
+        x, y = float(x), float(y)
+        if not math.isfinite(x) or not math.isfinite(y) or not (-2 <= x <= 3 and -2 <= y <= 3):
+            raise ValueError('invalid pointer coordinates')
+        self.attention.pointer(self, kind, x, y, button)
+        return self.snapshot()
 
     def _set_environment(self, name):
         if name != self.environment:
@@ -122,6 +140,7 @@ class World:
 
     def _step_interactions(self):
         if (self.t < self.typing_until or self.reduced_motion or self.spectacle
+                or any(a.reaction or a.attention for a in self.actors)
                 or self.phase in ('waiting','blocked')):
             self._clear_interactions()
             return
@@ -164,6 +183,7 @@ class World:
                      temperament=p["temperament"], tempo=p["tempo"], accent=p["accent"])
 
     def _populate(self, ids):
+        self.attention.reset(self)
         old = {a.id: a for a in self.actors}
         self._clear_entrances()
         self._clear_interactions()
@@ -284,15 +304,22 @@ class World:
                 self.scene_start = self.t
             self.generation += 1
 
-    def activity(self, phase=None, model=None, typing=False, effort=None):
+    def activity(self, phase=None, model=None, typing=False, effort=None, cursor=None):
         if phase and phase not in ("idle", "working", "waiting", "ready", "blocked"):
             raise ValueError("unknown phase")
         if model is not None:
             self.model = model
         if typing:
+            if cursor is not None:
+                if not isinstance(cursor, dict) or set(cursor) != {'x', 'y'}:
+                    raise ValueError('cursor must contain x and y only')
+                cursor = {k:float(cursor[k]) for k in ('x', 'y')}
+                if any(not math.isfinite(value) or not -32 <= value <= 32 for value in cursor.values()):
+                    raise ValueError('invalid cursor coordinates')
             self.typing_until = self.t+1.3
             self._clear_entrances()
             self._clear_interactions()
+            self.attention.typing(self, cursor)
         if effort is not None:
             self.set_effort(effort, baseline=not self._effort_seen)
         if phase and phase != self.phase:
@@ -430,21 +457,36 @@ class World:
         if social and self.scene in ("cookie", "paperball", "parade") and age > 4:
             for i, a in enumerate(self.actors[:2]):
                 a.target = .5+.29*math.sin(age*.65+i*1.5)
+        self.attention.step(self, dt)
         self._step_interactions()
         for i, a in enumerate(self.actors):
-            speed = .14*a.tempo
-            desired = max(-speed, min(speed, (a.target-a.x)*1.8))
-            if quiet or self.reduced_motion or 0 <= self.t-a.arrival < 1.2:
+            observing = a.attention is not None
+            reacting = a.reaction is not None
+            airborne = reacting and a.reaction['kind'] in ('jump', 'caught', 'land')
+            speed = (.92 if observing else .14)*a.tempo
+            desired = max(-speed, min(speed, (a.target-a.x)*(7 if observing else 1.8)))
+            if (quiet and not observing) or self.reduced_motion or airborne or 0 <= self.t-a.arrival < 1.2:
                 desired = 0
-            a.v += (desired-a.v)*(1-math.exp(-dt*9))
+            a.v += (desired-a.v)*(1-math.exp(-dt*(15 if observing else 9)))
             a.x = max(.07, min(.93, a.x+a.v*dt))
             a.travel += abs(a.v)*dt
-            if quiet or self.reduced_motion:
+            if self.reduced_motion:
                 a.pose, a.gesture = "idle", "rest"
+            elif airborne:
+                a.pose, a.gesture = 'wave', 'hang' if a.reaction['kind'] == 'caught' else 'catch'
             elif abs(a.v) > .008:
                 a.facing = 1 if a.v > 0 else -1
                 a.pose = "walk_right" if a.facing == 1 else "walk_left"
-                a.gesture = "walk"
+                a.gesture = "run" if observing else "walk"
+            elif observing:
+                a.facing = self.attention.gaze_direction(self, a)
+                a.pose = 'rest' if a.attention['style'] == 'crouch' else 'idle'
+                a.gesture = 'look_up' if a.attention['look_up'] else 'observe_' + a.attention['style']
+            elif quiet:
+                a.pose, a.gesture = 'idle', 'rest'
+            elif reacting:
+                a.pose = 'wave' if a.reaction['kind'] == 'click' else 'idle'
+                a.gesture = a.reaction['style']
             elif a.interaction and a.interaction['active']:
                 action = a.interaction['action']
                 a.pose = 'rest' if action in ('sit','read') else 'talk'
@@ -476,7 +518,7 @@ class World:
                 a.pose, a.gesture = "talk", PERSONALITIES[a.id]["gesture"]
             else:
                 a.pose, a.gesture = "idle", PERSONALITIES[a.id]["gesture"]
-            if social and self.scene == "whisper" and a.id in self.pair and abs(a.x-a.target) < .025 and not self.reduced_motion:
+            if social and self.scene == "whisper" and a.id in self.pair and abs(a.x-a.target) < .025 and not self.reduced_motion and not reacting and not observing:
                 a.pose = "talk" if int(age*1.4) % 2 == self.pair.index(a.id) else "idle"
                 a.gesture = "nod" if a.pose == "talk" else "think"
                 a.facing = 1 if a.id == self.pair[0] else -1
@@ -493,4 +535,5 @@ class World:
                 "quiet": self.t < self.typing_until, "paused": self.paused,
                 "reduced_motion": self.reduced_motion, "cast": [asdict(a) for a in self.actors],
                 "pool": self.pool[:], "density": self.density, "generation": self.generation,
-                "departing": [dict(a) for a in self.departing], "pair": self.pair[:]}
+                "departing": [dict(a) for a in self.departing], "pair": self.pair[:],
+                "pointer": self.attention.snapshot()}

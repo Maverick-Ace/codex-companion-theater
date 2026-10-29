@@ -14,8 +14,27 @@ def prepare(source):
     replacements={
       "lib.rs":[("mod pets;","mod pets;\nmod companion_bridge;")],
       "app.rs":[
-        ("        match &event {\n            TuiEvent::FocusLost => {",
-         "        if matches!(&event, TuiEvent::Key(_) | TuiEvent::Paste(_)) {\n            crate::companion_bridge::note_input();\n        }\n        if crate::companion_bridge::enabled() && self.overlay.is_some() {\n            let _ = tui.clear_ambient_pet_image();\n        }\n\n        match &event {\n            TuiEvent::FocusLost => {"),
+        ("        tui.link_hover.observe(&event);",
+         """        // Observe before upstream selection may consume an event; never reroute input.
+        match &event {
+            TuiEvent::Mouse(mouse) => crate::companion_bridge::note_mouse(mouse),
+            TuiEvent::Key(key) if self.overlay.is_none()
+                && self.chat_widget.no_modal_or_popup_active() => crate::companion_bridge::note_key(key),
+            TuiEvent::Paste(text) if !text.is_empty() && self.overlay.is_none()
+                && self.chat_widget.no_modal_or_popup_active() => crate::companion_bridge::note_input(),
+            TuiEvent::FocusLost | TuiEvent::Resize(_) | TuiEvent::Resume =>
+                crate::companion_bridge::hide(tui.frame_requester()),
+            _ => {}
+        }
+        if crate::companion_bridge::enabled()
+            && (self.overlay.is_some()
+                || matches!(&event, TuiEvent::Key(key)
+                    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('z')))
+        {
+            crate::companion_bridge::hide(tui.frame_requester());
+            let _ = tui.clear_ambient_pet_image();
+        }
+        tui.link_hover.observe(&event);"""),
         ("    fn render_chat_widget_frame(&mut self, tui: &mut tui::Tui, screen_size: Size) -> Result<Rect> {",
          "    fn render_chat_widget_frame(&mut self, tui: &mut tui::Tui, screen_size: Size) -> Result<Rect> {\n        crate::companion_bridge::begin_frame();"),
         ("                    if self.chat_widget.ambient_pet_image_enabled() {",
@@ -27,6 +46,8 @@ def prepare(source):
          "        crate::companion_bridge::note_effort(\n            &effort.map(ToString::to_string).unwrap_or_default(), true,\n        );\n        self.effort_tier = EffortTier::from_effort(effort);\n        self.effort_observed = true;"),
         ("        self.render_status_surface(status, buf, options);",
          "        crate::companion_bridge::record_composer(composer_rect);\n        self.render_status_surface(status, buf, options);"),
+        ("        self.render_voice_strip(composer_rect, buf);",
+         "        if let Some((x, y)) = self.cursor_pos_with_options(area, options) {\n            crate::companion_bridge::record_cursor(x, y);\n        }\n        self.render_voice_strip(composer_rect, buf);"),
         ("            // Overlay rows must erase both glyphs and styles from the transcript underneath.",
          "            crate::companion_bridge::record_popup();\n            // Overlay rows must erase both glyphs and styles from the transcript underneath.")]
     }
