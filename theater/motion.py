@@ -46,6 +46,14 @@ def joint_motion(actor, t):
             elif gesture == 'type':
                 dy += math.sin(phase * 4 + side) * .006
                 dx += side * .008
+            elif gesture in ('water','stir','serve','unpack','write'):
+                if side == -facing:
+                    dx += .018*facing
+                    dy += .01 + math.sin(phase*(1.7 if gesture=='write' else .8))*.008
+                    angle += math.sin(phase*1.4)*.045
+            elif gesture in ('sip','read'):
+                dx += side*.014
+                dy -= .008 + max(0,math.sin(phase*.65))*.009
             elif gesture == 'reach':
                 dx -= side * .014 * (.7 + .3 * math.sin(phase))
             elif gesture == 'wave' and side == -1:

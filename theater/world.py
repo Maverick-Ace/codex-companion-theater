@@ -8,6 +8,8 @@ import math
 import random
 import json
 from pathlib import Path
+from .props import interaction_slots, POSITIONS
+from .scenery import SetTransition
 
 ROOT = Path(__file__).resolve().parents[1]
 _catalog = json.loads((ROOT / "assets/cast/catalog.json").read_text())["characters"]
@@ -38,6 +40,7 @@ class Actor:
     temperament: str = ""
     tempo: float = 1.0
     accent: str = "#c7b7ff"
+    interaction: dict | None = None
 
 class World:
     def __init__(self, seed=7, cast=None, density=4):
@@ -59,6 +62,7 @@ class World:
         self.reduced_motion = False
         self.scene = "roam"
         self.environment = "none"
+        self.set_transition = SetTransition()
         self.scene_start = 0.0
         self.scene_end = 0.0
         self.next_scene = 5.0
@@ -66,7 +70,93 @@ class World:
         self.next_visit = 55.0
         self.generation = 0
         self.dialogue = []
+        self.entrances = []
+        self.entrance_speaker = None
+        self._line_last = {}
+        self._interaction_plans = {}
+        self._interaction_round = 0
+        self._next_interaction = 0.0
         self._populate(self.pool[:self.density])
+
+    def _set_environment(self, name):
+        if name != self.environment:
+            self._clear_interactions()
+        self.set_transition.change(name, self.t)
+        self.environment = name
+
+    def _clear_entrances(self):
+        self.entrances = []
+        if self.entrance_speaker:
+            identifier, text = self.entrance_speaker
+            for a in self.actors:
+                if a.id == identifier and a.bubble == text:
+                    a.bubble = ""
+        self.entrance_speaker = None
+
+    def _clear_interactions(self):
+        self._interaction_plans = {}
+        self._next_interaction = self.t+.25
+        for a in self.actors:
+            a.interaction = None
+
+    def _arrange_interactions(self):
+        # A single actor can eventually try all three props; each prop has one user.
+        slots = interaction_slots(self.environment, 3)
+        if not slots or not self.actors:
+            return
+        offset = self._interaction_round % len(slots)
+        slots = slots[offset:]+slots[:offset]
+        offset = self._interaction_round % len(self.actors)
+        actors = self.actors[offset:]+self.actors[:offset]
+        self._interaction_round += 1
+        for i,a in enumerate(actors[:len(slots)]):
+            if a.id == 'wenxin' and slots[i]['action'] == 'sit':
+                # Keep the wheelchair on the ground; let her read or sip instead.
+                j = next(j for j,slot in enumerate(slots) if slot['action'] != 'sit')
+                slots[i],slots[j] = slots[j],slots[i]
+        for a, slot in zip(actors, slots):
+            self._interaction_plans[a.id] = dict(slot, started=None, duration=self.rng.uniform(3.0, 4.3))
+            a.target = slot['x']
+            a.interaction = {"prop":slot['prop'], "action":slot['action'],
+                             "active":False, "progress":0.0}
+
+    def _step_interactions(self):
+        if (self.t < self.typing_until or self.reduced_motion or self.spectacle
+                or self.phase in ('waiting','blocked')):
+            self._clear_interactions()
+            return
+        if not self._interaction_plans and self.t >= self._next_interaction:
+            self._arrange_interactions()
+        for a in self.actors:
+            plan = self._interaction_plans.get(a.id)
+            if plan is None:
+                continue
+            arrived = abs(a.x-plan['x']) < .025 and abs(a.v) < .006 and self.t-a.arrival >= 1.2
+            if not arrived:
+                a.interaction = {"prop":plan['prop'], "action":plan['action'],
+                                 "active":False, "progress":0.0}
+                continue
+            if plan['started'] is None:
+                plan['started'] = self.t
+            progress = (self.t-plan['started'])/plan['duration']
+            if progress >= 1:
+                a.interaction = None
+                del self._interaction_plans[a.id]
+                self._next_interaction = self.t+1.0
+            else:
+                a.interaction = {"prop":plan['prop'], "action":plan['action'],
+                                 "active":True, "progress":progress}
+
+    def _speak_entrances(self):
+        while self.entrances and self.entrances[0][0] <= self.t:
+            due, identifier, text = self.entrances.pop(0)
+            if self.t-due > 4:
+                continue
+            for i,a in enumerate(self.actors):
+                if a.id == identifier:
+                    self.say(i,text,2.8)
+                    self.entrance_speaker = (identifier,text)
+                    return
 
     def _new_actor(self, identifier, x, arrival):
         p = PERSONALITIES[identifier]
@@ -75,6 +165,8 @@ class World:
 
     def _populate(self, ids):
         old = {a.id: a for a in self.actors}
+        self._clear_entrances()
+        self._clear_interactions()
         self.departing = [d for d in self.departing if d["id"] not in ids]
         self.departing.extend(dict(asdict(a), departure=self.t) for a in self.actors if a.id not in ids)
         n = len(ids)
@@ -83,6 +175,12 @@ class World:
         self.pair = []
         self.dialogue = []
         self.generation += 1
+        if old and not self.spectacle:
+            new_ids = [k for k in ids if k not in old]
+            for i, identifier in enumerate(new_ids):
+                self.entrances.append((self.t+.75+i*3.1, identifier, self._line(identifier,'entrance')))
+            if new_ids:
+                self.next_scene = max(self.next_scene,self.t+.75+len(new_ids)*3.1)
 
     def set_cast(self, ids):
         if not ids or any(k not in CAST for k in ids) or len(ids) != len(set(ids)):
@@ -127,7 +225,9 @@ class World:
         }
         self.spectacle = {"kind": effort, "start": self.t, "duration": 8.0 if effort == "max" else 10.0}
         self.scene = "power_"+effort
-        self.environment = "none"
+        self._set_environment("none")
+        self._clear_entrances()
+        self._clear_interactions()
         self.scene_start = self.t
         self.scene_end = self.t+self.spectacle["duration"]
         self.dialogue = []
@@ -157,7 +257,7 @@ class World:
             self.departing = [dict(asdict(a), departure=self.t) for a in self.actors if a.id not in ids]
             self.actors = saved["actors"]
             self.scene = saved["scene"]
-            self.environment = saved["environment"]
+            self._set_environment(saved["environment"])
             self.scene_start = self.t-saved["scene_age"]
             self.scene_end = self.t+saved["scene_left"]
             self.next_scene = self.t+max(2, saved["next_scene"])
@@ -168,14 +268,19 @@ class World:
             for a in self.actors:
                 a.bubble = ""
                 a.gesture = PERSONALITIES[a.id]["gesture"]
+                a.interaction = None
+            self._clear_interactions()
             # Task status can change during a celebration; resume the current task.
             if self.phase != saved["phase"]:
                 if self.phase == "working":
-                    self.scene, self.environment = "work", "office"
+                    self.scene = "work"
+                    self._set_environment("office")
                 elif self.phase in ("waiting", "blocked"):
-                    self.scene, self.environment = "waiting", "none"
+                    self.scene = "waiting"
+                    self._set_environment("none")
                 else:
-                    self.scene, self.environment = "roam", "none"
+                    self.scene = "roam"
+                    self._set_environment("none")
                 self.scene_start = self.t
             self.generation += 1
 
@@ -186,6 +291,8 @@ class World:
             self.model = model
         if typing:
             self.typing_until = self.t+1.3
+            self._clear_entrances()
+            self._clear_interactions()
         if effort is not None:
             self.set_effort(effort, baseline=not self._effort_seen)
         if phase and phase != self.phase:
@@ -194,15 +301,19 @@ class World:
             if self.spectacle:
                 return
             self.dialogue = []
+            self._clear_entrances()
+            self._clear_interactions()
             if phase == "working":
-                self.scene, self.environment, self.scene_start = "work", "office", self.t
+                self.scene, self.scene_start = "work", self.t
+                self._set_environment("office")
                 self.pair = []
                 for i, a in enumerate(self.actors):
                     a.target = .14+i*.20
                     a.bubble = ""
                 self.say(0, self._line(self.actors[0].id, "work"), 3.2)
             elif phase in ("waiting", "blocked"):
-                self.scene, self.environment = "waiting", "none"
+                self.scene = "waiting"
+                self._set_environment("none")
                 self.pair = []
                 for a in self.actors:
                     a.target = a.x
@@ -212,7 +323,12 @@ class World:
 
     def _line(self, identifier, context):
         lines = PERSONALITIES[identifier]["lines"]
-        return self.rng.choice(lines.get(context, lines["chat"]))
+        choices = lines.get(context, lines["chat"])
+        previous = self._line_last.get((identifier,context))
+        available = [line for line in choices if line != previous] or choices
+        line = self.rng.choice(available)
+        self._line_last[identifier,context] = line
+        return line
 
     def say(self, index, text, duration=3.0):
         if 0 <= index < len(self.actors):
@@ -227,7 +343,9 @@ class World:
             raise ValueError("unknown scene")
         self.cancel_spectacle()
         self.scene, self.scene_start = name, self.t
-        self.environment = ENVIRONMENTS.get(name, "none")
+        self._set_environment(ENVIRONMENTS.get(name, "none"))
+        self._clear_entrances()
+        self._clear_interactions()
         self.pair = []
         self.dialogue = []
         duration = 14 if name in ("home", "office", "dinner", "outing", "stargaze") else 12 if name in ("cookie", "paperball", "parade", "whisper") else 9
@@ -290,12 +408,15 @@ class World:
         social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None
         age = self.t-self.scene_start
         if social and self.scene != "roam" and self.t >= self.scene_end:
-            self.scene, self.environment, self.pair = "roam", "none", []
+            self.scene, self.pair = "roam", []
+            self._set_environment("none")
             self.dialogue = []
         if social and self.t >= self.next_scene:
             self.start_scene(self.rng.choice(SOCIAL_SCENES))
             age = 0
-        if social and not self.reduced_motion:
+        if not quiet and not self.spectacle:
+            self._speak_entrances()
+        if social and not self.reduced_motion and not self.entrances:
             self._speak_due()
         if social and self.scene == "roam" and self.t >= self.next_roam:
             self.next_roam = self.t+self.rng.uniform(3, 6)
@@ -306,10 +427,10 @@ class World:
             incoming = self.pool.pop(0)
             self.pool.append(incoming)
             self._populate(self.pool[:self.density])
-            self.say(0, self._line(self.actors[0].id, "entrance"))
         if social and self.scene in ("cookie", "paperball", "parade") and age > 4:
             for i, a in enumerate(self.actors[:2]):
                 a.target = .5+.29*math.sin(age*.65+i*1.5)
+        self._step_interactions()
         for i, a in enumerate(self.actors):
             speed = .14*a.tempo
             desired = max(-speed, min(speed, (a.target-a.x)*1.8))
@@ -324,6 +445,15 @@ class World:
                 a.facing = 1 if a.v > 0 else -1
                 a.pose = "walk_right" if a.facing == 1 else "walk_left"
                 a.gesture = "walk"
+            elif a.interaction and a.interaction['active']:
+                action = a.interaction['action']
+                a.pose = 'rest' if action in ('sit','read') else 'talk'
+                a.gesture = {'sit':'rest','inspect':'peek'}.get(action,action)
+                plan = self._interaction_plans.get(a.id)
+                if plan:
+                    object_x = POSITIONS[self.environment][plan['prop']]
+                    if abs(object_x-a.x) > .005:
+                        a.facing = 1 if object_x > a.x else -1
             elif self.spectacle:
                 a.pose = "wave"
                 a.gesture = "clap" if self.spectacle["kind"] == "ultra" else "reach"
@@ -331,11 +461,11 @@ class World:
                 a.pose = "rest"
                 a.gesture = "rest" if self.scene == "home" else "sway"
             elif self.scene in ("office", "work"):
-                a.pose, a.gesture = "talk", "type"
+                a.pose, a.gesture = "idle", "think"
             elif self.scene in ("celebrate", "highfive"):
                 a.pose, a.gesture = "wave", "clap"
             elif self.scene == "dinner":
-                a.pose, a.gesture = "talk", "reach"
+                a.pose, a.gesture = "idle", "sway"
             elif self.scene == "outing":
                 a.pose, a.gesture = "wave", "bounce"
             elif self.scene == "photo":
@@ -359,6 +489,7 @@ class World:
         return {"time": round(self.t, 3), "scene": self.scene, "scene_age": self.t-self.scene_start,
                 "phase": self.phase, "model": self.model, "effort": self.effort,
                 "spectacle": spectacle, "environment": self.environment,
+                "stage_transition": self.set_transition.snapshot(self.t, self.reduced_motion or self.t < self.typing_until),
                 "quiet": self.t < self.typing_until, "paused": self.paused,
                 "reduced_motion": self.reduced_motion, "cast": [asdict(a) for a in self.actors],
                 "pool": self.pool[:], "density": self.density, "generation": self.generation,

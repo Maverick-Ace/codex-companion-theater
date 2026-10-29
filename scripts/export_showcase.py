@@ -13,16 +13,23 @@ from theater.render import Renderer
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output',type=Path,default=ROOT/'artifacts/ensemble-demo.webp')
+    parser.add_argument('--output',type=Path)
+    parser.add_argument('--props',action='store_true',help='Show entrances and prop contact choreography')
     args=parser.parse_args()
+    args.output=args.output or ROOT/'artifacts'/('props-demo.webp' if args.props else 'ensemble-demo.webp')
     world=World(seed=23)
     renderer=Renderer()
     frames=[]
-    for action,value,seconds in [('effort','max',3.2),('effort','ultra',3.7),
+    timeline=[('effort','max',3.2),('effort','ultra',3.7),
                                   ('scene','home',2),('scene','office',2),
                                   ('scene','dinner',2.5),('scene','outing',2.5),
-                                  ('scene','photo',2.5),('scene','stargaze',2.5)]:
+                                  ('scene','photo',2.5),('scene','stargaze',2.5)]
+    if args.props:
+        timeline=[('cast','gpt deepseek claude kimi',3.5)]+[
+            ('scene',name,6.5) for name in ('home','office','dinner','outing')]
+    for action,value,seconds in timeline:
         if action=='effort':world.set_effort(value)
+        elif action=='cast':world.set_cast(value.split())
         else:world.start_scene(value)
         for _ in range(round(seconds*25)):
             world.tick(1/25)

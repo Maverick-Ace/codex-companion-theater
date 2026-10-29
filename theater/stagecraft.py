@@ -3,75 +3,264 @@ import math
 from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
 
-def environment(canvas, name, floor, size, t, still=False):
-    d=ImageDraw.Draw(canvas)
-    w=canvas.width
-    u=max(.65,min(1.8,size/110))
-    def rect(cx,y,ww,hh,fill,outline=None,r=4):
-        box=tuple(round(v) for v in (cx-ww*u/2,floor-y*u-hh*u,cx+ww*u/2,floor-y*u))
-        radius=max(0,min(round(r*u),(box[2]-box[0])//2,(box[3]-box[1])//2))
-        d.rounded_rectangle(box,radius=radius,fill=fill,outline=outline,width=max(1,round(u)))
-    def line(points,color,width=2):
-        d.line([(x,floor-y*u) for x,y in points],fill=color,width=max(1,round(width*u)))
+from functools import lru_cache
+from .props import prop_layout
+
+
+class _SetPainter:
+    def __init__(self, canvas, name, floor, size, factor=1):
+        self.draw=ImageDraw.Draw(canvas)
+        self.factor=factor
+        self.floor=floor*factor
+        self.unit=max(.65,min(1.8,size/110))*factor
+        self.anchors=prop_layout(name,canvas.width//factor,floor,size)
+
+    def point(self, prop, x, y):
+        return self.anchors[prop]['x']*self.factor+x*self.unit,self.floor-y*self.unit
+
+    def polygon(self, prop, points, fill, outline=None):
+        self.draw.polygon([self.point(prop,*p) for p in points],fill=fill,outline=outline)
+
+    def line(self, prop, points, color, width=1):
+        self.draw.line([self.point(prop,*p) for p in points],fill=color,width=max(1,round(width*self.unit)),joint='curve')
+
+    def rect(self, prop, x, y, width, height, fill, outline=None, radius=3):
+        x0,y0=self.point(prop,x-width/2,y+height)
+        x1,y1=self.point(prop,x+width/2,y)
+        box=tuple(round(v) for v in (x0,y0,x1,y1))
+        r=max(0,min(round(radius*self.unit),(box[2]-box[0])//2,(box[3]-box[1])//2))
+        self.draw.rounded_rectangle(box,radius=r,fill=fill,outline=outline,width=max(1,round(self.unit)))
+
+    def ellipse(self, prop, x, y, rx, ry, fill, outline=None, width=1):
+        x0,y0=self.point(prop,x-rx,y+ry)
+        x1,y1=self.point(prop,x+rx,y-ry)
+        self.draw.ellipse((x0,y0,x1,y1),fill=fill,outline=outline,width=max(1,round(width*self.unit)))
+
+    def arc(self, prop, x, y, rx, ry, start, end, color, width=1):
+        x0,y0=self.point(prop,x-rx,y+ry)
+        x1,y1=self.point(prop,x+rx,y-ry)
+        self.draw.arc((x0,y0,x1,y1),start,end,fill=color,width=max(1,round(width*self.unit)))
+
+
+def _cup(p, prop='teacup', y=39):
+    p.ellipse(prop,0,y-12,12,2,'#65526128')
+    p.ellipse(prop,8,y-3,5,5,None,'#c1c7d3',1.5)
+    p.rect(prop,0,y-10,14,12,'#a3bec8','#d7dbe2',3)
+    p.ellipse(prop,0,y+2,7,2.5,'#e6d5bc','#e5e1d8')
+    p.ellipse(prop,0,y+2,5,1.5,'#ad8066')
+    p.line(prop,[(-4,y-3),(-4,y-7)],'#d4e1e0')
+    p.ellipse(prop,0,y-12,11,2,'#b8a3b7')
+
+
+def _book(p, prop='book', y=44):
+    p.polygon(prop,[(-17,y+4),(-2,y+1),(0,y-3),(2,y+1),(17,y+4),(17,y-8),(1,y-12),(-17,y-8)],'#887898','#c0aeca')
+    p.polygon(prop,[(-15,y+5),(-1,y+1),(-1,y-10),(-15,y-6)],'#ddd3bd')
+    p.polygon(prop,[(1,y+1),(15,y+5),(15,y-6),(1,y-10)],'#f0dfc5')
+    p.line(prop,[(0,y+1),(0,y-11)],'#a995a4')
+    for side in (-1,1):
+        for row in range(3):
+            p.line(prop,[(side*4,y-1-row*2),(side*12,y+1-row*2)],'#b7a9aa',.5)
+    p.polygon(prop,[(8,y-7),(11,y-6),(11,y-14),(9,y-12),(8,y-13)],'#bb8b91')
+
+
+@lru_cache(maxsize=16)
+def _set_art(name,width,height,floor,size,variants):
+    """Only scene/geometry/held-object changes rebuild the two-times artwork."""
+    canvas=Image.new('RGBA',(width*2,height*2))
+    p=_SetPainter(canvas,name,floor,size,2)
+    taken=set(variants)
     if name=='home':
-        cx=w*.20
-        # A low sofa, cushion, rug and a warm reading lamp.
-        d.ellipse((cx-80*u,floor-5*u,cx+80*u,floor+1),fill='#bd9bb526')
-        rect(cx,8,112,35,'#856595','#c4a0cf',9)
-        rect(cx,6,123,18,'#a07cae','#d3afd9',6)
-        for side in (-1,1):rect(cx+side*54*u,5,17,32,'#9971ac',r=5)
-        rect(cx-25*u,26,24,17,'#e7c5b9',r=5)
-        lx=w*.08
-        line([(lx,4),(lx,77)],'#ba99bd',3)
-        d.polygon([(lx-20*u,floor-61*u),(lx-12*u,floor-87*u),(lx+12*u,floor-87*u),(lx+20*u,floor-61*u)],fill='#e2be8f',outline='#f5d3a6')
-        line([(lx-14*u,2),(lx+14*u,2)],'#b79bbf',3)
+        p.ellipse('sofa',0,3,82,5,'#aa8ba124')
+        # Upholstered back, box depth, front bevel and separate seat cushions.
+        p.rect('sofa',0,15,121,40,'#806b8a','#b69ac2',8)
+        p.rect('sofa',0,24,107,28,'#a08aab','#c3accb',7)
+        p.line('sofa',[(-48,46),(48,46)],'#c2acc9',.6)
+        for x in (-20,20):p.line('sofa',[(x,28),(x,47)],'#8c7599',.7)
+        p.rect('sofa',0,8,121,15,'#806789','#b198b8',3)
+        press=1.5 if 'sofa_pressed' in taken else 0
+        for x in (-27,27):
+            p.rect('sofa',x,19-press,50,7,'#b19abb','#ccb4d1',3)
+            p.line('sofa',[(x-19,20-press),(x+19,20-press)],'#947c9d',.6)
+        for side in (-1,1):
+            p.rect('sofa',side*57,8,15,29,'#a48aad','#c3aacd',5)
+            p.line('sofa',[(side*59,12),(side*59,31)],'#bd9ec6',.7)
+            p.rect('sofa',side*47,1,6,7,'#655369',radius=1)
+        # A small paw-print cushion makes the lounge identifiable at CLI scale.
+        p.rect('sofa',-25,28,22,20,'#d4b3ac','#e6cdc0',5)
+        p.ellipse('sofa',-25,36,4,3,'#b88891')
+        for x,y in ((-30,41),(-26,43),(-22,42),(-19,39)):
+            p.ellipse('sofa',x,y,1.5,1.8,'#b88891')
+        p.ellipse('lamp',0,2,14,3,'#a592aa')
+        p.line('lamp',[(0,4),(0,69)],'#8b7c91',3)
+        p.line('lamp',[(1,8),(1,67)],'#c1a7b6',.7)
+        p.polygon('lamp',[(-22,65),(-14,86),(12,86),(21,65)],'#d6b991','#ead6b5')
+        p.ellipse('lamp',0,65,21,3,'#ead5b4','#e8ccaa')
+        for x in (-10,0,10):p.line('lamp',[(x*.55,84),(x,67)],'#c4a787',.7)
+        p.line('lamp',[(12,65),(12,57)],'#ad9095',.7)
+        p.ellipse('lamp',12,56,1,1.5,'#c7a17f')
+        # A little reading stool and a separate tea table leave room to move.
+        p.rect('book',0,4,5,29,'#94818c',radius=1)
+        p.ellipse('book',0,34,22,4,'#bd9b97','#ddbeb2')
+        if 'book' not in taken:_book(p)
+        p.rect('side_table',0,3,5,22,'#927d8a',radius=1)
+        p.ellipse('side_table',0,2,17,3,'#89727e')
+        p.ellipse('side_table',0,28,27,5,'#b18e94','#d9b8b6')
+        p.arc('side_table',0,28,22,3,0,175,'#e2c7bd',.7)
+        if 'teacup' not in taken:_cup(p)
     elif name=='office':
-        cx=w*.53
-        # Laptop screen, desk, notebook, mug and a tiny potted plant.
-        rect(cx,21,137,7,'#ad8baf','#d7bbd4',2)
-        for x in (cx-56*u,cx+56*u):rect(x,1,5,21,'#8f759b',r=1)
-        rect(cx,30,44,27,'#45374f','#b7a1cf',3)
-        for n in range(3):line([(cx-15*u,49-n*5),(cx+(8+n%2*6)*u,49-n*5)],'#a4d5cd',1)
-        rect(cx,27,55,3,'#c0a6d5',r=1)
-        rect(cx-49*u,28,23,4,'#e6cb9b',r=1)
-        rect(cx+45*u,28,12,12,'#b2cbdc',r=3)
-        d.arc((cx+49*u,floor-38*u,cx+59*u,floor-29*u),-85,85,fill='#c1d6e3',width=2)
-        px=w*.84
-        rect(px,1,18,19,'#b4867e',r=3)
-        for a in (-.8,0,.8):
-            line([(px,19),(px+math.sin(a)*14*u,38)],'#7baa97',2)
-            d.ellipse((px+math.sin(a)*14*u-6*u,floor-44*u,px+math.sin(a)*14*u+6*u,floor-30*u),fill='#83b69a')
+        # Desk top has perspective and thickness, with inset legs and a drawer.
+        p.ellipse('desk',0,2,103,5,'#6b5c7222')
+        for x in (-76,76):p.rect('desk',x,1,6,39,'#7c7089','#b6a2bb',1)
+        p.polygon('desk',[(-90,43),(87,43),(96,37),(-98,37)],'#c4a6af','#dfc4c8')
+        p.polygon('desk',[(-98,37),(96,37),(96,32),(-98,32)],'#987b92','#b89baa')
+        p.line('desk',[(-92,41),(81,41)],'#e1c5c7',.7)
+        p.rect('desk',40,22,42,10,'#8b718a','#ac91a7',2)
+        p.line('desk',[(33,27),(45,27)],'#d2b8bc',1)
+        # A screen inset, bottom bevel, trackpad, and three rows of tiny keys.
+        p.rect('laptop',0,46,49,34,'#51465e','#ad9fbb',3)
+        p.rect('laptop',0,49,43,27,'#37394a','#6b6d83',1)
+        p.ellipse('laptop',0,78,1,1,'#b8b0c3')
+        for n,length in enumerate((23,31,18)):
+            p.line('laptop',[(-16,70-n*6),(-16+length,70-n*6)],('#8fbdb1','#bfafcc','#92acc6')[n],1)
+        p.polygon('laptop',[(-25,46),(25,46),(31,39),(-31,39)],'#b1a2bf','#d0c1d8')
+        p.line('laptop',[(-31,38),(31,38)],'#72687f',2)
+        for row in range(3):
+            for col in range(7):p.line('laptop',[(-19+col*6,44-row*1.4),(-16+col*6,44-row*1.4)],'#726a87',.6)
+        p.rect('laptop',0,39.3,11,1.8,'#d2c5dc',radius=.5)
+        p.polygon('notebook',[(-17,44),(12,47),(18,41),(-13,37)],'#b7937e','#dfbca1')
+        p.polygon('notebook',[(-15,45),(11,47),(16,42),(-13,39)],'#e7d7b9','#f0e1c9')
+        for n in range(3):p.line('notebook',[(-9+n*2,43-n*.8),(10+n,45-n*.8)],'#b5a3a3',.5)
+        p.line('notebook',[(16,48),(25,41)],'#a2c3c0',2)
+        p.ellipse('plant',0,2,18,3,'#71656c22')
+        p.polygon('plant',[(-12,22),(12,22),(9,2),(-8,2)],'#a47f7e','#d2aca0')
+        p.ellipse('plant',0,22,13,3,'#c8a39b','#e0bbb0')
+        p.ellipse('plant',0,22,9,1.8,'#6f6066')
+        for x,y,rx,ry in ((-12,43,8,5),(11,49,8,6),(-5,60,7,7),(18,35,8,5),(-15,32,8,5)):
+            p.line('plant',[(0,23),(x,y)],'#73958a',1.3)
+            p.ellipse('plant',x,y,rx,ry,'#83a796','#a2b8a2')
+            p.line('plant',[(x-rx*.6,y-ry*.4),(x+rx*.5,y+ry*.3)],'#bbccaf',.6)
     elif name=='dinner':
-        cx=w*.5
-        # Low table keeps the chibis visible; steam animates above a shared pot.
-        rect(cx,13,237,8,'#bc8987','#e3b4aa',4)
-        for x in (cx-99*u,cx+99*u):rect(x,1,6,14,'#96727e',r=1)
-        d.ellipse((cx-23*u,floor-35*u,cx+23*u,floor-15*u),fill='#bd6f68',outline='#efc2a1',width=2)
-        d.ellipse((cx-23*u,floor-36*u,cx+23*u,floor-26*u),fill='#e6b374',outline='#f6d5ab')
-        for j in (-1,0,1):
-            sx=cx+j*11*u
-            phase=0 if still else t*2+j
-            line([(sx,39),(sx+math.sin(phase)*3*u,47),(sx+math.sin(phase+.7)*4*u,55)],'#dfcfd78a',1)
-        for side in (-1,1):
-            x=cx+side*71*u
-            d.ellipse((x-19*u,floor-26*u,x+19*u,floor-17*u),fill='#d6d2e6',outline='#bba8ca')
-            for k in (-1,0,1):d.ellipse((x+k*8*u-4*u,floor-29*u,x+k*8*u+4*u,floor-23*u),fill='#c79878')
-            line([(x-16*u,29),(x+16*u,32)],'#e0bd8e',2)
+        p.ellipse('table',0,2,138,5,'#8f6b7722')
+        for x in (-106,106):p.rect('table',x,1,7,15,'#8f717e',radius=1)
+        p.polygon('table',[(-116,21),(117,21),(133,14),(-131,14)],'#c29899','#e2b9ac')
+        p.rect('table',1,10,264,5,'#9d777f','#ba9094',1)
+        p.line('table',[(-116,19),(113,19)],'#e2bba9',.7)
+        # Pot ears, thick rim, curved belly, little feet, soup and ingredients.
+        for side in (-1,1):p.ellipse('hotpot',side*28,29,7,5,None,'#bca7ab',2.5)
+        p.ellipse('hotpot',0,19,23,4,'#886e74')
+        p.rect('hotpot',0,18,47,16,'#aa7778','#ddada0',6)
+        p.arc('hotpot',-2,26,20,6,0,150,'#d99f91',1)
+        p.ellipse('hotpot',0,34,26,7,'#bd9a95','#ead1b8',1.7)
+        p.ellipse('hotpot',0,34,22,4.5,'#c89663','#f1d3a1')
+        for x,y,color in ((-12,35,'#83a179'),(-5,32,'#e2cf9f'),(7,35,'#c78975'),(14,32,'#d7b585'),(0,36,'#91aa82')):
+            p.ellipse('hotpot',x,y,3,1.4,color)
+        # A plate of dumplings, bowl, chopstick rest and a patterned napkin.
+        p.ellipse('dish',0,19,23,5,'#b2a2bf','#dfd3df')
+        p.ellipse('dish',0,20,18,3,'#e3d7dd')
+        for x in (-10,0,10):
+            p.ellipse('dish',x,23,6,3.2,'#d9bb9a','#b6998e')
+            for dx in (-2,0,2):p.line('dish',[(x+dx,23),(x+dx+1,25)],'#ab8c7d',.5)
+        p.line('dish',[(-24,31),(21,27)],'#d6b48a',1)
+        p.line('dish',[(-24,34),(21,30)],'#d6b48a',1)
+        p.rect('dish',-20,26,10,2,'#c8bdc8',radius=1)
+        p.rect('teacup',0,20,28,3,'#c69d9b','#dfbcb0',1)
+        if 'teacup' not in taken:_cup(p)
     elif name=='outing':
-        cx=w*.18
-        d.polygon([(cx-58*u,floor-1),(cx,floor-82*u),(cx+59*u,floor-1)],fill='#759caa',outline='#c0d5d6')
-        d.polygon([(cx-26*u,floor-1),(cx,floor-68*u),(cx+27*u,floor-1)],fill='#364d65',outline='#9ab6c4')
-        line([(cx,82),(cx+5*u,94)],'#c9bfce',2)
-        d.polygon([(cx+5*u,floor-94*u),(cx+28*u,floor-88*u),(cx+5*u,floor-84*u)],fill='#e8bca0')
-        mx=w*.68
-        d.polygon([(mx-62*u,floor-10*u),(mx+40*u,floor-10*u),(mx+70*u,floor),(mx-40*u,floor)],fill='#b38c9c88',outline='#d4b4bd')
-        for side in (-1,1):
-            x=mx+side*16*u
-            rect(x,9,16,14,'#ddbd8e',r=3)
-        tx=w*.89
-        line([(tx,1),(tx,55)],'#b39c9e',4)
-        for y,ww in ((68,44),(54,57),(39,66)):
-            d.polygon([(tx-ww*u/2,floor-(y-26)*u),(tx,floor-y*u),(tx+ww*u/2,floor-(y-26)*u)],fill='#78a193',outline='#9ec1aa')
+        p.ellipse('tent',0,2,76,4,'#66847722')
+        # Distinct outer fly, shaded side, open doorway, seams and guy ropes.
+        p.polygon('tent',[(-60,3),(-3,84),(55,3)],'#7b9fa2','#b6cdbe')
+        p.polygon('tent',[(-3,84),(26,75),(72,3),(55,3)],'#5e8490','#9eb9b6')
+        p.polygon('tent',[(-27,4),(-3,66),(25,4)],'#344d61','#abc1bb')
+        p.polygon('tent',[(-27,4),(-3,66),(-15,14)],'#91b0ac','#bdd0bb')
+        p.line('tent',[(-3,78),(-48,8)],'#b6cdbd',.7)
+        p.line('tent',[(-58,7),(-75,1)],'#a4b7a9',.7)
+        p.line('tent',[(49,10),(82,1)],'#a4b7a9',.7)
+        for x in (-75,82):p.line('tent',[(x-2,0),(x+1,5)],'#b8a894',1.4)
+        p.line('tent',[(-3,84),(-3,93)],'#d1bfa8',1)
+        p.polygon('tent',[(-3,93),(20,87),(-3,83)],'#d2a9a0','#e2c6ad')
+        # The checked blanket keeps perspective, not a floating flat rectangle.
+        p.polygon('picnic',[(-65,10),(42,10),(71,1),(-43,1)],'#b08f9c9a','#c9adb4')
+        for n in range(1,7):
+            x=-65+n*107/7
+            p.line('picnic',[(x,10),(x+22,1)],'#dbc0bd8a',1.3)
+        for n in range(1,4):
+            y=1+n*9/4
+            p.line('picnic',[(-43-(y-1)*22/9,y),(71-(y-1)*29/9,y)],'#e0c6bc8a',.9)
+        # Woven basket with alternating reeds, bound rim and curved handle.
+        p.polygon('basket',[(-19,22),(19,22),(16,3),(-16,3)],'#b19170','#ddbb90')
+        for n in range(5):p.line('basket',[(-16,5+n*3),(16,5+n*3)],'#d7b48b',.7)
+        for x in (-12,-6,0,6,12):p.line('basket',[(x,4),(x*1.1,21)],'#8c745f',.7)
+        p.rect('basket',0,20,40,3,'#d3b28a','#e1c39c',1)
+        p.arc('basket',0,25,12,12,180,360,'#d1b087',2)
+        if 'basket_lid' not in taken:
+            p.polygon('basket',[(-19,24),(18,24),(22,20),(-21,20)],'#b89d7b','#ddc196')
+            p.line('basket',[(-16,22),(17,22)],'#e3c9a1',.7)
+        # A thermos and its removable drinking cup sit beside the blanket.
+        p.rect('teacup',0,5,14,25,'#829fa4','#b5c5c1',3)
+        p.line('teacup',[(-4,9),(-4,26)],'#c7d5cd',1)
+        if 'teacup' not in taken:_cup(p,y=39)
+        p.rect('tree',0,1,6,47,'#8d8980',radius=1)
+        p.line('tree',[(0,11),(7,22)],'#9c9687',1)
+        for y,branch_width in ((75,39),(58,54),(40,67)):
+            p.polygon('tree',[(-branch_width/2,y-26),(0,y),(branch_width/2,y-26)],'#70978b','#9cbaa2')
+            p.line('tree',[(-branch_width*.30,y-22),(0,y-4),(branch_width*.15,y-15)],'#86aa96',.6)
+    return canvas.resize((width,height),Image.Resampling.LANCZOS)
+
+
+def _responses(canvas,name,floor,size,t,still,active):
+    layer=Image.new('RGBA',canvas.size)
+    p=_SetPainter(layer,name,floor,size)
+    if name=='dinner':
+        # Steam is low-contrast and settles completely in quiet/reduced mode.
+        for j in (-1,0,1):
+            phase=0 if still else t*1.6+j
+            x=j*11
+            p.line('hotpot',[(x,42),(x+math.sin(phase)*2,49),(x+math.sin(phase+.7)*3,55)],'#e7d6d268',.7)
+    if not still:
+        for interaction in active:
+            prop,action=interaction['prop'],interaction['action']
+            if name=='office' and prop=='laptop' and action=='type':
+                if int(t*3)%2==0:p.line('laptop',[(5,56),(5,60)],'#c7e0d0',1.2)
+                p.line('laptop',[(-12+(int(t*6)%5)*5,41),(-9+(int(t*6)%5)*5,41)],'#ddd3e5',1)
+            elif name=='office' and prop=='plant' and action=='water':
+                for j in range(4):
+                    progress=(t*1.1+j*.25)%1
+                    x=-18+progress*13
+                    y=56-progress*19
+                    p.line('plant',[(x,y+1.5),(x+.5,y-1)],'#9ccbd0b0',1)
+                p.arc('plant',0,22,9,2,0,160,'#d2c9b4',.7)
+            elif name=='dinner' and prop=='hotpot' and action=='stir':
+                for j in range(2):
+                    r=4+((t*8+j*8)%16)
+                    p.arc('hotpot',0,34,r,r*.19,15,310,'#f5d4a6b0',.8)
+            elif name=='outing' and prop=='basket' and action=='unpack':
+                progress=interaction.get('progress',.5)
+                opening=max(0,min(1,progress*5,(1-progress)*5))
+                p.polygon('basket',[(-19,24),(18,24),(18,24+opening*17),(-19,24+opening*13)],'#b89d7b','#ddc196')
+                p.line('basket',[(-15,26+opening*4),(14,26+opening*7)],'#dfc19b',.7)
+            elif name=='outing' and prop=='tent' and action=='inspect':
+                sway=math.sin(t*2)*2
+                p.line('tent',[(-3,66),(14+sway,14)],'#c2d1bb',1.2)
+    canvas.alpha_composite(layer)
+
+
+def environment(canvas, name, floor, size, t, still=False, state=None):
+    """Draw a quiet miniature set, with responses only to active contacts."""
+    if name not in ('home','office','dinner','outing'):
+        return
+    active=[]
+    if not still:
+        active=[a['interaction'] for a in (state or {}).get('cast',[])
+                if a.get('interaction') and a['interaction'].get('active')]
+    variants=[]
+    for interaction in active:
+        prop,action=interaction['prop'],interaction['action']
+        if action in ('sip','read'):variants.append(prop)
+        elif action=='unpack':variants.append('basket_lid')
+        elif action=='sit':variants.append('sofa_pressed')
+    art=_set_art(name,canvas.width,canvas.height,floor,size,tuple(sorted(set(variants))))
+    canvas.alpha_composite(art)
+    _responses(canvas,name,floor,size,t,still,active)
 
 
 def power_backdrop(canvas, state, floor, size, positions):

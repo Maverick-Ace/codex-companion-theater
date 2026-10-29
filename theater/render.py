@@ -4,7 +4,10 @@ import math
 from PIL import Image, ImageDraw, ImageFont
 from .world import NAMES
 from .motion import PuppetRig
-from .stagecraft import environment, power_backdrop, power_foreground, scene_details
+from .stagecraft import power_backdrop, power_foreground, scene_details
+from .scenery import draw_set
+from .hand_props import draw_held, engagement
+from .props import position
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
@@ -57,6 +60,9 @@ class Renderer:
 
     def sprite(self, actor, t, height, still=False):
         pose = actor["pose"]
+        contact = actor.get('interaction')
+        if contact and contact['active'] and contact['action'] in ('type','write','water','stir','serve','unpack','inspect'):
+            pose = 'idle'
         next_index = None
         mix = 0
         if pose.startswith("walk"):
@@ -91,19 +97,22 @@ class Renderer:
         ensemble = bool(effect and effect['kind'] == 'ultra')
         if ensemble:
             size = max(18, min(int(height*.43), int(width/9*.88)))
-        environment(canvas, state.get('environment','none'), floor, size, t, still)
+        draw_set(canvas,state,floor,size)
         def placement(a, index):
             if ensemble and 'departure' not in a:
                 row, column = (0,index) if index<8 else (1,index-8)
                 count=8 if row==0 else 9
                 return int((column+1)*width/(count+1)), floor-int(size*.58) if row==0 else floor, int(size*.9) if row==0 else size
-            return int(a['x']*(width-size)+size/2),floor,size
+            return position(a['x'],width,size),floor,size
         positions=[placement(a,i) for i,a in enumerate(state['cast'])]
         power_backdrop(canvas,state,floor,size,positions)
         actors=([] if ensemble else state.get('departing',[]))+state['cast']
         for i, a in enumerate(actors):
             index=next((j for j,item in enumerate(state['cast']) if item['id']==a['id']),0)
             x, actor_floor, actor_size = placement(a,index)
+            contact=a.get('interaction')
+            if contact and contact['active'] and contact['action']=='sit' and a['id']!='wenxin' and not still:
+                actor_floor-=round(20*max(.65,min(1.8,actor_size/110))*engagement(contact['progress']))
             sprite = self.sprite(a, t, actor_size, still=still)
             bob = 0 if state["reduced_motion"] or quiet else (math.sin(t*2.4+i) * .8)
             if a.get('gesture') == 'bounce' and not still:
@@ -137,6 +146,8 @@ class Renderer:
                 y=actor_floor-sprite.height+pad
             composite_clipped(canvas,sprite,x-sprite.width//2,y)
             if 'departure' in a:continue
+            if not active_portal:
+                draw_held(canvas,state,a,x,actor_floor,actor_size)
             if labels:
                 text = NAMES[a["id"]]
                 f = self.font(max(10, int(11*scale)))
