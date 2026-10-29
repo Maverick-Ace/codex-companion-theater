@@ -71,6 +71,8 @@ use pointer_state::{PointerEvent, PointerInput};
 
 struct Reply { value: Value, received: Instant }
 struct Bridge {
+    submission_id: u64,
+    submission: Option<(String, Instant)>,
     composer: Option<Rect>,
     cursor: Option<(u16, u16)>,
     pointer: PointerInput,
@@ -95,7 +97,7 @@ fn bridge() -> Option<&'static Mutex<Bridge>> {
                 let _ = responses.try_send(reply);
             }
         }).ok()?;
-        Some(Mutex::new(Bridge { composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
+        Some(Mutex::new(Bridge { submission_id: 0, submission: None, composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
     }).as_ref()
 }
 
@@ -201,6 +203,17 @@ pub(crate) fn note_input() {
     }
 }
 
+/// Only called after upstream accepts a real user turn; no draft crosses IPC.
+pub(crate) fn note_submission(model: &str) {
+    if let Some(lock) = bridge() {
+        if let Ok(mut b) = lock.lock() {
+            b.submission_id = b.submission_id.saturating_add(1);
+            b.submission = Some((model.to_owned(), Instant::now()));
+            b.last_input = None;
+        }
+    }
+}
+
 /// Observe the effective upstream value; repeated redraws must not restart an effect.
 pub(crate) fn note_effort(effort: &str, baseline: bool) {
     let effort = if effort.is_empty() { "none" } else { effort };
@@ -250,10 +263,12 @@ pub(crate) fn frame(
     let pointer_events: Vec<Value> = b.pointer.events.iter()
         .map(|event| json!({"kind":event.kind,"x":event.x,"y":event.y,"button":event.button})).collect();
     let typing = b.last_input.is_some_and(|t| t.elapsed() < Duration::from_millis(900));
+    let submission = b.submission.as_ref().map(|(model, when)|
+        json!({"id":b.submission_id,"model":model,"age_ms":when.elapsed().as_millis()}));
     let delivered = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":key,
         "visible":true,"width_px":width_px,"height_px":height_px,
         "model":model,"phase":if working {"working"} else {"idle"},"typing":typing,
-        "cursor":cursor,"pointer_events":pointer_events,
+        "cursor":cursor,"pointer_events":pointer_events,"submission":submission,
         "effort":b.effort,"effort_baseline":b.effort_baseline})).is_ok();
     // A full IPC mailbox retries the same click/motion sequence next frame.
     b.pointer.sent(delivered);

@@ -39,6 +39,9 @@ def prepare(source):
          "    fn render_chat_widget_frame(&mut self, tui: &mut tui::Tui, screen_size: Size) -> Result<Rect> {\n        crate::companion_bridge::begin_frame();"),
         ("                    if self.chat_widget.ambient_pet_image_enabled() {",
          "                    if crate::companion_bridge::enabled() {\n                        let request = crate::companion_bridge::frame(\n                            Rect::new(0, 0, screen_size.width, screen_size.height),\n                            self.chat_widget.current_model(),\n                            self.chat_widget.is_agent_turn_running(),\n                            self.chat_widget.has_active_modal()\n                                || self.chat_widget.external_editor_state() != ExternalEditorState::Closed,\n                            tui.frame_requester(),\n                        );\n                        let _ = tui.draw_ambient_pet_image(request);\n                    } else if self.chat_widget.ambient_pet_image_enabled() {")],
+      "chatwidget/input_submission.rs":[
+        ("        if !self.submit_op(op.clone()) {\n            return (false, None);\n        }",
+         "        if !self.submit_op(op.clone()) {\n            return (false, None);\n        }\n        if source == UserMessageSource::Prompt {\n            crate::companion_bridge::note_submission(effective_mode.model());\n        }")],
       "bottom_pane/chat_composer.rs":[
         ("        let is_baseline = !self.effort_observed;",
          "        let is_baseline = !self.effort_observed;\n        crate::companion_bridge::note_effort(\n            &effort.map(ToString::to_string).unwrap_or_default(), is_baseline,\n        );"),
@@ -68,7 +71,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument("source",type=Path);p.add_argument("--apply",action="store_true")
     args=p.parse_args()
     output=prepare(args.source)
-    print(json.dumps({"compatible_anchors":True,"existing_files":3,"new_module":1,"applied":args.apply},indent=2))
+    print(json.dumps({"compatible_anchors":True,"existing_files":4,"new_module":1,"applied":args.apply},indent=2))
     if not args.apply:return
     for file,content in output.items():
         backup=file.with_suffix(file.suffix+".theater-original")

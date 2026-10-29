@@ -11,6 +11,7 @@ from pathlib import Path
 from .props import interaction_slots, POSITIONS
 from .scenery import SetTransition
 from .attention import Attention
+from .launch import destination, snapshot as flight_snapshot, DURATION as FLIGHT_DURATION
 
 ROOT = Path(__file__).resolve().parents[1]
 _catalog = json.loads((ROOT / "assets/cast/catalog.json").read_text())["characters"]
@@ -59,6 +60,7 @@ class World:
         self.effort = "medium"
         self._effort_seen = False
         self.spectacle = None
+        self.flight = None
         self._saved_stage = None
         self.typing_until = 0.0
         self.paused = False
@@ -139,7 +141,7 @@ class World:
                              "active":False, "progress":0.0}
 
     def _step_interactions(self):
-        if (self.t < self.typing_until or self.reduced_motion or self.spectacle
+        if (self.t < self.typing_until or self.reduced_motion or self.spectacle or self.flight
                 or any(a.reaction or a.attention for a in self.actors)
                 or self.phase in ('waiting','blocked')):
             self._clear_interactions()
@@ -183,6 +185,7 @@ class World:
                      temperament=p["temperament"], tempo=p["tempo"], accent=p["accent"])
 
     def _populate(self, ids):
+        self.cancel_flight()
         self.attention.reset(self)
         old = {a.id: a for a in self.actors}
         self._clear_entrances()
@@ -222,6 +225,7 @@ class World:
             raise ValueError("effort must be a nonempty short string")
         effort = effort.strip().lower()
         previous = self.effort
+        if previous != effort:self.cancel_flight()
         self.effort = effort
         self._effort_seen = True
         if previous == effort:
@@ -304,12 +308,35 @@ class World:
                 self.scene_start = self.t
             self.generation += 1
 
+    def cancel_flight(self):
+        if self.flight is None:return
+        self.flight = None
+        self.scene, self.scene_start = ('work' if self.phase=='working' else 'roam'), self.t
+        self._set_environment('office' if self.phase=='working' else 'none')
+        self.next_scene = max(self.next_scene,self.t+3)
+
+    def submit(self, model=None):
+        """Accepted user message metadata only, independent of redraw/work events."""
+        self.cancel_spectacle()
+        if model is not None:self.model = str(model)[:160]
+        self.attention.reset(self)
+        self._clear_interactions()
+        self._clear_entrances()
+        self.dialogue = []
+        self.typing_until = self.t
+        for a in self.actors:a.bubble = ''
+        self.scene, self.scene_start = 'work', self.t
+        self._set_environment('none')
+        self.flight = {'start':self.t, 'model':self.model, 'destination':destination(self.model)}
+        return self.snapshot()
+
     def activity(self, phase=None, model=None, typing=False, effort=None, cursor=None):
         if phase and phase not in ("idle", "working", "waiting", "ready", "blocked"):
             raise ValueError("unknown phase")
         if model is not None:
             self.model = model
         if typing:
+            self.cancel_flight()
             if cursor is not None:
                 if not isinstance(cursor, dict) or set(cursor) != {'x', 'y'}:
                     raise ValueError('cursor must contain x and y only')
@@ -327,6 +354,9 @@ class World:
             self.phase = phase
             if self.spectacle:
                 return
+            if self.flight:
+                if phase not in ('waiting','blocked'):return
+                self.cancel_flight()
             self.dialogue = []
             self._clear_entrances()
             self._clear_interactions()
@@ -369,6 +399,7 @@ class World:
         if name not in SCENES and name != "roam":
             raise ValueError("unknown scene")
         self.cancel_spectacle()
+        self.cancel_flight()
         self.scene, self.scene_start = name, self.t
         self._set_environment(ENVIRONMENTS.get(name, "none"))
         self._clear_entrances()
@@ -428,11 +459,13 @@ class World:
 
     def _step(self, dt):
         self.t += dt
+        if self.flight and self.t-self.flight['start'] >= FLIGHT_DURATION:
+            self.cancel_flight()
         self.departing = [a for a in self.departing if self.t-a["departure"] < 1.2]
         if self.spectacle and self.t-self.spectacle["start"] >= self.spectacle["duration"]:
             self.cancel_spectacle()
         quiet = self.t < self.typing_until
-        social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None
+        social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None and self.flight is None
         age = self.t-self.scene_start
         if social and self.scene != "roam" and self.t >= self.scene_end:
             self.scene, self.pair = "roam", []
@@ -441,7 +474,7 @@ class World:
         if social and self.t >= self.next_scene:
             self.start_scene(self.rng.choice(SOCIAL_SCENES))
             age = 0
-        if not quiet and not self.spectacle:
+        if not quiet and not self.spectacle and not self.flight:
             self._speak_entrances()
         if social and not self.reduced_motion and not self.entrances:
             self._speak_due()
@@ -460,6 +493,9 @@ class World:
         self.attention.step(self, dt)
         self._step_interactions()
         for i, a in enumerate(self.actors):
+            launching = self.flight is not None
+            if launching:
+                a.target = .23 + i*.095 if i<3 else .72+(i-3)*.12
             observing = a.attention is not None
             reacting = a.reaction is not None
             airborne = reacting and a.reaction['kind'] in ('jump', 'caught', 'land')
@@ -467,7 +503,7 @@ class World:
             if observing:
                 ramp = max(0, min(1, (a.attention['age']-a.attention['delay'])/.5))
                 ramp = ramp*ramp*(3-2*ramp)
-            speed = (.43*a.attention['pace']*ramp if observing else .14)*a.tempo
+            speed = (.43*a.attention['pace']*ramp if observing else .3 if launching else .14)*a.tempo
             desired = max(-speed, min(speed, (a.target-a.x)*(4 if observing else 1.8)))
             if (quiet and not observing) or self.reduced_motion or airborne or 0 <= self.t-a.arrival < 1.2:
                 desired = 0
@@ -486,6 +522,11 @@ class World:
                 a.facing = self.attention.gaze_direction(self, a)
                 a.pose = 'rest' if a.attention['style'] == 'crouch' else 'idle'
                 a.gesture = 'look_up' if a.attention['look_up'] else 'observe_' + a.attention['style']
+            elif launching:
+                age = self.t-self.flight['start']
+                a.pose = 'idle' if age<1.6 else 'wave'
+                a.gesture = ('type' if i%2 else 'write') if age<1.6 else 'reach' if age<3.8 else 'clap'
+                a.facing = 1 if a.x<.51 else -1
             elif quiet:
                 a.pose, a.gesture = 'idle', 'rest'
             elif reacting:
@@ -540,4 +581,5 @@ class World:
                 "reduced_motion": self.reduced_motion, "cast": [asdict(a) for a in self.actors],
                 "pool": self.pool[:], "density": self.density, "generation": self.generation,
                 "departing": [dict(a) for a in self.departing], "pair": self.pair[:],
-                "pointer": self.attention.snapshot()}
+                "pointer": self.attention.snapshot(),
+                "flight": flight_snapshot(self.flight,self.t,self.reduced_motion)}

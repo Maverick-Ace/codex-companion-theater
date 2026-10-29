@@ -94,6 +94,7 @@ class Theater:
         self.frame_id = 0
         self.last_geometry = None
         self.native_effort = None
+        self.native_submission = 0
 
     def advance(self):
         now = time.monotonic()
@@ -126,6 +127,14 @@ class Theater:
                         self.world.set_effort(incoming[0], baseline=baseline)
                         self.native_effort = incoming
                 self.world.activity(message.get("phase"), message.get("model"), message.get("typing",False), cursor=cursor)
+                submission = message.get('submission')
+                if isinstance(submission,dict):
+                    sequence = submission.get('id')
+                    if isinstance(sequence,int) and not isinstance(sequence,bool) and sequence>self.native_submission:
+                        self.native_submission = sequence
+                        age = submission.get('age_ms',0)
+                        if isinstance(age,(int,float)) and 0<=age<3000:
+                            self.world.submit(submission.get('model',message.get('model','')))
                 for event in events:
                     self.world.pointer(**event)
                 image = self.renderer.frame(self.world.snapshot(), width, height)
@@ -160,6 +169,9 @@ class Theater:
                          "Stop":"ready", "Interrupt":"idle", "SessionStart":"idle"}.get(event, message.get("phase"))
                 self.world.activity(phase, message.get("model"), message.get("typing",False),
                                     effort=message.get("effort"), cursor=cursor)
+            elif op == "submit":
+                self.world.activity('working',model=message.get('model'))
+                self.world.submit(message.get('model'))
             elif op == "pointer":
                 events = pointer_batch(message.get('events', [message]))
                 if 'width_px' in message or 'height_px' in message:

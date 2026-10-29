@@ -108,7 +108,7 @@ class Attention:
             return
         if world.paused:
             return
-        if world.phase in ('waiting', 'blocked') or world.spectacle or world.t < world.typing_until:
+        if world.phase in ('waiting', 'blocked') or world.spectacle or world.flight or world.t < world.typing_until:
             return
         px, py = x * self.width, y * self.height
         previous = self.point
