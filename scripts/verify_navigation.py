@@ -21,6 +21,30 @@ import time
 
 ROOT=Path(__file__).resolve().parents[1]
 
+def launch_profile(manifest=None, expected_version=None):
+    path=Path(manifest or os.getenv('CODEX_THEATER_MANIFEST') or ROOT/'build/current.json').resolve()
+    info=json.loads(path.read_text())
+    binary=Path(info['binary']).resolve()
+    version=subprocess.check_output([str(binary),'--version'],text=True,timeout=10).strip()
+    if expected_version and version != 'codex-cli '+expected_version:
+        raise ValueError(f'Expected codex-cli {expected_version}, found {version}')
+    if info.get('version') and version != 'codex-cli '+info['version']:
+        raise ValueError('Manifest version does not match its native executable')
+    return path,{'manifest':str(path),'binary':str(binary),'native_version':version}
+
+def child_has_executable(parent, binary):
+    try:
+        children=Path(f'/proc/{parent}/task/{parent}/children').read_text().split()
+    except OSError:
+        return False
+    for pid in children:
+        try:
+            if Path(f'/proc/{pid}/exe').resolve()==Path(binary):
+                return True
+        except OSError:
+            continue
+    return False
+
 def clean(raw):
     raw=re.sub(rb'\x1b_G.*?\x1b\\',b'',raw,flags=re.S)
     raw=re.sub(rb'\x1b\](?:[^\x07\x1b]|\x1b(?!\\))*(?:\x07|\x1b\\)',b'',raw)
@@ -29,17 +53,22 @@ def clean(raw):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cwd',type=Path,default=Path.home(),help='An already trusted Codex directory')
+    parser.add_argument('--manifest',type=Path,help='Validate an isolated candidate without changing the active manifest')
+    parser.add_argument('--output',type=Path,help='Evidence directory; defaults to build/navigation-check')
+    parser.add_argument('--expect-version',help='Fail before startup unless the native executable has this version')
     args=parser.parse_args()
-    output=ROOT/'build/navigation-check';output.mkdir(parents=True,exist_ok=True)
+    manifest,profile=launch_profile(args.manifest,args.expect_version)
+    output=args.output or ROOT/'build/navigation-check';output.mkdir(parents=True,exist_ok=True)
     master,slave=pty.openpty()
     fcntl.ioctl(slave,termios.TIOCSWINSZ,struct.pack('HHHH',37,160,1280,948))
     env=dict(os.environ,TERM='xterm-256color',TERM_PROGRAM='ghostty')
+    env['CODEX_THEATER_MANIFEST']=str(manifest)
     for key in ('TMUX','TMUX_PANE','ZELLIJ','CODEX_THEATER_SOCKET'):env.pop(key,None)
     proc=subprocess.Popen([sys.executable,str(ROOT/'scripts/codex-theater'),'-C',str(args.cwd)],
         stdin=slave,stdout=slave,stderr=slave,env=env,start_new_session=True,
         preexec_fn=lambda:fcntl.ioctl(0,termios.TIOCSCTTY,0))
     os.close(slave)
-    raw=bytearray();ready=None;events={};start=time.monotonic();record=None;control_ok=False
+    raw=bytearray();ready=None;events={};start=time.monotonic();record=None;control_ok=False;binary_seen=False
     try:
         while time.monotonic()-start<35:
             if proc.poll() is not None:break
@@ -61,6 +90,7 @@ def main():
             elapsed=time.monotonic()-ready
             if elapsed>1 and 'control' not in events:
                 events['control']=len(raw)
+                binary_seen=child_has_executable(proc.pid,profile['binary'])
                 registry=Path.home()/'.cache/codex-companion-theater/instances'
                 for file in registry.glob('*.json'):
                     try:
@@ -96,11 +126,12 @@ def main():
     before=len(re.findall(rb'\x1b_G[^;]*a=T[^;]*f=100',raw[:left]))
     after=len(re.findall(rb'\x1b_G[^;]*a=T[^;]*f=100',raw[back:]))
     last_frame=raw.rfind(b'a=T')
-    report={'ready':ready is not None,'dashboard_after_left':'Agent command center' in clean(raw[left:back]),
+    report={**profile,'binary_process_matches':binary_seen,
+            'ready':ready is not None,'dashboard_after_left':'Agent command center' in clean(raw[left:back]),
             'frames_before_overview':before,'frames_after_return':after,'mcp_without_foreground_env':control_ok,
             'exit_code':proc.returncode,'final_image_clear':raw.rfind(b'a=d')>last_frame>=0,
             'instance_removed':bool(record) and not record[0].exists(),'model_request_submitted':False}
-    report['passed']=all((report['dashboard_after_left'],before>0,after>0,control_ok,
+    report['passed']=all((binary_seen,report['dashboard_after_left'],before>0,after>0,control_ok,
                           proc.returncode==0,report['final_image_clear'],report['instance_removed']))
     (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

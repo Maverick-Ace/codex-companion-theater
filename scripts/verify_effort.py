@@ -22,18 +22,23 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from theater.service import request
-from verify_navigation import clean
+from verify_navigation import clean, launch_profile, child_has_executable
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cwd', type=Path, default=Path.home())
+    parser.add_argument('--manifest', type=Path, help='Validate an isolated candidate without changing the active manifest')
+    parser.add_argument('--output', type=Path, help='Evidence directory; defaults to build/effort-check')
+    parser.add_argument('--expect-version', help='Require this native CLI version before starting a PTY')
     args = parser.parse_args()
-    output = ROOT/'build/effort-check'
+    manifest, profile = launch_profile(args.manifest, args.expect_version)
+    output = args.output or ROOT/'build/effort-check'
     output.mkdir(parents=True, exist_ok=True)
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 37, 160, 1280, 948))
     env = dict(os.environ, TERM='xterm-256color', TERM_PROGRAM='ghostty')
+    env['CODEX_THEATER_MANIFEST']=str(manifest)
     for key in ('TMUX','TMUX_PANE','ZELLIJ','CODEX_THEATER_SOCKET'):
         env.pop(key, None)
     proc = subprocess.Popen([sys.executable, str(ROOT/'scripts/codex-theater'), '-C', str(args.cwd)],
@@ -42,7 +47,7 @@ def main():
     os.close(slave)
     raw = bytearray()
     samples = []
-    report = {'model_request_submitted':False}
+    report = {**profile,'model_request_submitted':False}
     record = None
     initial = None
 
@@ -166,6 +171,7 @@ def main():
         # Let that baseline settle before exercising genuine user changes.
         pump(2.5)
         initial=state()
+        report['binary_process_matches']=child_has_executable(proc.pid,profile['binary'])
         report['baseline_effort']=initial.get('effort')
         report['baseline_has_no_spectacle']=not initial.get('spectacle')
         normal=[a['id'] for a in initial['cast']]
@@ -214,7 +220,7 @@ def main():
             pump(1)
         report['exit_code']=proc.poll()
         report['passed']=all(value is True for key,value in report.items() if key not in
-                             ('model_request_submitted','baseline_effort','exit_code')) and report['exit_code']==0
+                             ('manifest','binary','native_version','model_request_submitted','baseline_effort','exit_code')) and report['exit_code']==0
     except Exception as exc:
         report.update(passed=False,error=str(exc))
     finally:

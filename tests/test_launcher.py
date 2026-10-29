@@ -19,13 +19,20 @@ class LauncherTests(unittest.TestCase):
             socket_path=Path(kwargs['env']['CODEX_THEATER_SOCKET'])
             self.assertEqual(socket_path,resolved)
 
-    def exercise_launcher(self,symlink_runtime=False):
+    def test_candidate_manifest_selects_its_binary_without_changing_default(self):
+        self.exercise_launcher(candidate=True)
+
+    def exercise_launcher(self,symlink_runtime=False,candidate=False):
         module=runpy.run_path(str(ROOT/'scripts/codex-theater'))
         main=module['main']
         with tempfile.TemporaryDirectory() as temp:
             folder=Path(temp);(folder/'build').mkdir()
             binary=folder/'native-codex';binary.touch()
             (folder/'build/current.json').write_text(json.dumps({'binary':str(binary)}))
+            default_manifest=(folder/'build/current.json').read_text()
+            if candidate:
+                binary=folder/'candidate-codex';binary.touch()
+                (folder/'candidate.json').write_text(json.dumps({'binary':str(binary)}))
             main.__globals__['ROOT']=folder
             engine=Mock();engine.poll.return_value=None;engine.wait.return_value=0
             cli=Mock();cli.wait.return_value=0
@@ -47,7 +54,10 @@ class LauncherTests(unittest.TestCase):
                  patch.dict(os.environ,{'CODEX_HOME':str(home),'XDG_RUNTIME_DIR':str(runtime)}), \
                  patch('subprocess.Popen',side_effect=spawn),patch('signal.signal'), \
                  patch('pathlib.Path.home',return_value=folder):
+                os.environ.pop('CODEX_THEATER_MANIFEST',None)
+                if candidate:os.environ['CODEX_THEATER_MANIFEST']=str(folder/'candidate.json')
                 self.assertEqual(main(),0)
+            self.assertEqual((folder/'build/current.json').read_text(),default_manifest)
             argv,kwargs=calls[-1]
             # A launcher-injected -c tui.pet override makes upstream daemon_startup
             # select embedded mode, disabling the empty-composer Left shortcut.
