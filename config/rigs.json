@@ -1,0 +1,19 @@
+{
+  "gpt": {"hair_left":{"gain":1.25},"hair_right":{"gain":1.25}},
+  "deepseek": {"hair_left":{"gain":1.2},"hair_right":{"gain":1.2}},
+  "claude": {"head":{"gain":0.7},"arm_left":{"gain":0.8}},
+  "gemini": {"head":{"gain":1.25},"arm_right":{"gain":1.2}},
+  "minimax": {"arm_right":{"gain":1.2}},
+  "rwkv": {"arm_left":{"x":0.23,"gain":1.15},"arm_right":{"x":0.77,"gain":1.15},"foot_left":{"x":0.43},"foot_right":{"x":0.57}},
+  "qwen": {"hair_left":{"gain":1.15}},
+  "llama": {"head":{"gain":1.1}},
+  "seed": {"arm_left":{"gain":1.25},"arm_right":{"gain":1.25}},
+  "grok": {"head":{"gain":1.2}},
+  "kimi": {"hair_left":{"gain":1.15},"hair_right":{"gain":1.15}},
+  "perplexity": {"head":{"gain":0.8}},
+  "mistral": {"arm_left":{"gain":1.2}},
+  "glm": {"head":{"gain":0.8}},
+  "wenxin": {"head":{"y":0.47},"hem":{"locked":true},"foot_left":{"locked":true},"foot_right":{"locked":true}},
+  "jev": {"head":{"gain":0.8}},
+  "hunyuan": {"hair_left":{"gain":0.8},"hair_right":{"gain":0.8}}
+}

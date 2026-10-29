@@ -13,6 +13,8 @@ def main():
     scene=subs.add_parser("scene");scene.add_argument("name")
     cast=subs.add_parser("cast");cast.add_argument("ids",nargs="+")
     density=subs.add_parser("density");density.add_argument("value",type=int)
+    effort=subs.add_parser("effort",help="Set local animation's reasoning-effort display")
+    effort.add_argument("value",help="Reasoning level, e.g. high, max, or ultra")
     for op in ("pause","resume","quiet","play"):subs.add_parser(op)
     phase=subs.add_parser("phase");phase.add_argument("phase",choices=["idle","working","waiting","ready","blocked"])
     args=parser.parse_args()
@@ -28,7 +30,7 @@ def main():
     m={"v":1,"op":args.op}
     if args.op=="scene":m["name"]=args.name
     if args.op=="cast":m["ids"]=args.ids
-    if args.op=="density":m["value"]=args.value
+    if args.op in ("density","effort"):m["value"]=args.value
     if args.op in ("pause","resume"):m.update(op="pause",value=args.op=="pause")
     if args.op in ("quiet","play"):m.update(op="motion",reduced=args.op=="quiet")
     if args.op=="phase":m.update(op="activity",phase=args.phase)

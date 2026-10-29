@@ -21,6 +21,10 @@ def prepare(source):
         ("                    if self.chat_widget.ambient_pet_image_enabled() {",
          "                    if crate::companion_bridge::enabled() {\n                        let request = crate::companion_bridge::frame(\n                            Rect::new(0, 0, screen_size.width, screen_size.height),\n                            self.chat_widget.current_model(),\n                            self.chat_widget.is_agent_turn_running(),\n                            self.chat_widget.has_active_modal()\n                                || self.chat_widget.external_editor_state() != ExternalEditorState::Closed,\n                            tui.frame_requester(),\n                        );\n                        let _ = tui.draw_ambient_pet_image(request);\n                    } else if self.chat_widget.ambient_pet_image_enabled() {")],
       "bottom_pane/chat_composer.rs":[
+        ("        let is_baseline = !self.effort_observed;",
+         "        let is_baseline = !self.effort_observed;\n        crate::companion_bridge::note_effort(\n            &effort.map(ToString::to_string).unwrap_or_default(), is_baseline,\n        );"),
+        ("        self.effort_tier = EffortTier::from_effort(effort);\n        self.effort_observed = true;",
+         "        crate::companion_bridge::note_effort(\n            &effort.map(ToString::to_string).unwrap_or_default(), true,\n        );\n        self.effort_tier = EffortTier::from_effort(effort);\n        self.effort_observed = true;"),
         ("        self.render_status_surface(status, buf, options);",
          "        crate::companion_bridge::record_composer(composer_rect);\n        self.render_status_surface(status, buf, options);"),
         ("            // Overlay rows must erase both glyphs and styles from the transcript underneath.",

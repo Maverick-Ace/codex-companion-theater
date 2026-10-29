@@ -2,17 +2,93 @@
 <html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>输入框旁的小伙伴剧场</title>
 <style>
-:root{color-scheme:dark;--ink:#f0eafa;--muted:#afa3c0;--line:#3e344e;--accent:#d4b5fa}*{box-sizing:border-box}body{margin:0;background:#17141d;color:var(--ink);font:15px/1.6 system-ui,"Noto Sans CJK SC",sans-serif}main{max-width:1320px;margin:auto;padding:40px 30px}header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}h1{font-family:serif;font-size:36px;font-weight:500;letter-spacing:.05em;margin:6px 0 8px}.eyebrow{color:var(--accent);letter-spacing:.2em;font-size:11px}p{color:var(--muted);margin:0}button,select{font:inherit;color:inherit;background:#292331;border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}button:hover{background:#3c2d4d;border-color:#9876b7}button.active{color:#23182f;background:#d4b5fa}.top{display:flex;gap:8px;flex-wrap:wrap}.stage{margin:30px 0 20px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 55% 65%,#34293e,transparent 62%),#1e1926}.terminal-head{padding:11px 18px;color:#8c819c;background:#211c29;display:flex;justify-content:space-between;font:12px ui-monospace,monospace}.transcript{padding:20px 24px 0;color:#bcb1cb;font:14px/1.8 ui-monospace,monospace;min-height:90px}.transcript b{color:#d5b4f2}.actors{height:240px;display:flex;align-items:end}.actors img{width:100%;height:220px;object-fit:contain;image-rendering:auto}.composer{border-top:1px solid #71617e;border-bottom:1px solid #51435d;background:#2c2435;padding:15px 24px;display:flex;gap:14px;align-items:center}.composer span{color:#ddc0ff}.composer input{font:inherit;flex:1;min-width:0;color:var(--ink);background:none;border:0;outline:0}.footer{font:12px ui-monospace,monospace;color:#8c819c;padding:8px 24px}.toolbar{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:28px}.scenes{display:flex;gap:8px;flex-wrap:wrap}.caption{font-size:12px;color:#8f819e}.roster-head{display:flex;align-items:baseline;justify-content:space-between}h2{font-size:19px;font-weight:500;margin:0 0 14px}.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:10px}.character{padding:8px 4px 12px;text-align:center;border-radius:11px;background:#211b2a}.character img{display:block;width:100%;height:112px;object-fit:contain}.character.selected{border-color:#c39ae8;background:#362742}.character small{color:#a699b3;display:block;font-size:10px}.note{margin-top:22px;font-size:12px;line-height:1.8;max-width:950px}@media(max-width:700px){main{padding:25px 14px}header{display:block}h1{font-size:28px}.top{margin-top:18px}.actors{height:195px}.actors img{height:185px}.transcript{min-height:75px}.roster{grid-template-columns:repeat(4,1fr)}.character img{height:85px}}
+:root{color-scheme:dark;--ink:#f0eafa;--muted:#afa3c0;--line:#3e344e;--accent:#d4b5fa}*{box-sizing:border-box}body{margin:0;background:#17141d;color:var(--ink);font:15px/1.6 system-ui,"Noto Sans CJK SC",sans-serif}main{max-width:1320px;margin:auto;padding:40px 30px}header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}h1{font-family:serif;font-size:36px;font-weight:500;letter-spacing:.05em;margin:6px 0 8px}.eyebrow{color:var(--accent);letter-spacing:.2em;font-size:11px}p{color:var(--muted);margin:0}button,select{font:inherit;color:inherit;background:#292331;border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}button:hover{background:#3c2d4d;border-color:#9876b7}button.active{color:#23182f;background:#d4b5fa}.top{display:flex;gap:8px;flex-wrap:wrap}.stage{margin:30px 0 20px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 55% 65%,#34293e,transparent 62%),#1e1926}.terminal-head{padding:11px 18px;color:#8c819c;background:#211c29;display:flex;justify-content:space-between;font:12px ui-monospace,monospace}.transcript{padding:20px 24px 0;color:#bcb1cb;font:14px/1.8 ui-monospace,monospace;min-height:90px}.transcript b{color:#d5b4f2}.actors{height:240px;display:flex;align-items:end}.actors img{width:100%;height:220px;object-fit:contain;image-rendering:auto}.composer{border-top:1px solid #71617e;border-bottom:1px solid #51435d;background:#2c2435;padding:15px 24px;display:flex;gap:14px;align-items:center}.composer span{color:#ddc0ff}.composer input{font:inherit;flex:1;min-width:0;color:var(--ink);background:none;border:0;outline:0}.footer{font:12px ui-monospace,monospace;color:#8c819c;padding:8px 24px}.toolbar{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:28px}.scenes{display:flex;gap:8px;flex-wrap:wrap}.caption{font-size:12px;color:#8f819e}.roster-head{display:flex;align-items:baseline;justify-content:space-between}h2{font-size:19px;font-weight:500;margin:0 0 14px}.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:10px}.character{padding:8px 4px 12px;text-align:center;border-radius:11px;background:#211b2a}.character img{display:block;width:100%;height:112px;object-fit:contain}.character.selected{border-color:#c39ae8;background:#362742}.character small{color:#a699b3;display:block;font-size:10px}.character .trait{color:#d1badf;font-size:10px;margin-top:3px}.effort{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.feedback{min-height:22px;margin-top:8px;font-size:12px;color:#edb8c7}.note{margin-top:22px;font-size:12px;line-height:1.8;max-width:950px}@media(max-width:700px){main{padding:25px 14px}header{display:block}h1{font-size:28px}.top{margin-top:18px}.actors{height:195px}.actors img{height:185px}.transcript{min-height:75px}.roster{grid-template-columns:repeat(4,1fr)}.character img{height:85px}}
 </style>
-<main><header><div><div class="eyebrow">COMPANION THEATER / LOCAL EDITION</div><h1>光标旁，热闹一点。</h1><p>她们有自己的小日常，也会安静陪你写完这一行。</p></div><div class="top"><button id="pause">暂停</button><button id="motion">轻柔模式</button><button id="labels" aria-pressed="false">显示名字</button><select id="phase" aria-label="任务状态"><option value="idle">自由活动</option><option value="working">正在工作</option><option value="waiting">等待批准</option><option value="ready">任务完成</option></select></div></header>
+<main><header><div><div class="eyebrow">COMPANION THEATER / LOCAL EDITION</div><h1>光标旁，热闹一点。</h1><p>她们有自己的小日常，也会安静陪你写完这一行。</p></div><div class="top"><button id="pause">暂停</button><button id="motion">轻柔模式</button><button id="labels" aria-pressed="false">显示名字</button><label class="effort">思考强度<select id="effort" aria-label="思考强度"><option value="">未设置</option><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max · 小队共鸣</option><option value="ultra">ultra · 全员庆典</option></select></label><select id="phase" aria-label="任务状态"><option value="idle">自由活动</option><option value="working">正在工作</option><option value="waiting">等待批准</option><option value="ready">任务完成</option></select></div></header>
 <div class="stage"><div class="terminal-head"><span>● ● ●　codex / companion theater</span><span id="status">自由活动</span></div><div class="transcript"><b>›</b> 今天一起把这个想法做出来吧。<br><span style="color:#82738f">小伙伴们正在输入框边沿散步……</span></div><div class="actors"><img id="frame" alt="小伙伴们的实时场景"></div><label class="composer"><span>›</span><input id="draft" placeholder="在这里试着输入，她们会安静一点……" autocomplete="off"></label><div class="footer">本地情景对白 · 不发送输入内容 · 不调用模型 API</div></div>
-<div class="toolbar"><div class="scenes" id="scenes"></div><div><span class="caption">同时登场 </span><select id="density" aria-label="登场人数"><option>2</option><option>3</option><option selected>4</option><option>5</option></select></div></div>
-<div class="roster-head"><h2>今天，谁来陪你？</h2><span class="caption">点选角色组成候场队伍 · 17 位伙伴</span></div><div class="roster" id="roster"></div><p class="note">这是与 CLI 共用同一动作引擎的本地预览。角色参考 AI Gijinka 社区设定，Q 版动作图为生成素材；对白是为这个剧场编写的情景短句。角色并未分别连接各家模型。原设作者和来源记录在项目素材目录中。</p></main>
+<div class="toolbar"><div class="scenes" id="scenes"></div><div><span class="caption">同时登场 </span><select id="density" aria-label="登场人数"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option></select></div></div>
+<p id="feedback" class="feedback" role="status" aria-live="polite"></p><div class="roster-head"><h2>今天，谁来陪你？</h2><span class="caption">点选角色组成候场队伍 · 17 位伙伴</span></div><div class="roster" id="roster"></div><p class="note">这是与 CLI 共用同一动作引擎的本地预览。角色参考 AI Gijinka 社区设定，Q 版动作图为生成素材；对白是为这个剧场编写的情景短句。每位角色的性格与对白是结合模型特点创作的剧场人设。max 使用当前队伍演出，ultra 让全员短暂登场，结束后恢复原队伍。角色并未分别连接各家模型。原设作者和来源记录在项目素材目录中。</p></main>
 <script>
-const $=s=>document.querySelector(s);let state,selected=[],paused=false,reduced=false,showNames=false;const names={roam:'散散步',whisper:'交头接耳',chat:'聊聊天',cookie:'分饼干',paperball:'纸团大战',tea:'午后茶会',parade:'排队巡游',celebrate:'击掌庆祝'};
-async function command(data){const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const j=await r.json();if(!r.ok)throw Error(j.error);state=j.state;update();return j}
-function update(){if(!state)return;$('#status').textContent=(names[state.scene]||state.scene)+(state.quiet?' / 安静陪伴':'');$('#pause').textContent=state.paused?'继续':'暂停';document.querySelectorAll('.character').forEach(b=>b.classList.toggle('selected',selected.includes(b.dataset.id)))}
-async function init(){const j=await(await fetch('/api/status')).json();state=j.state;selected=[...state.pool];for(const c of j.catalog){const b=document.createElement('button');b.className='character selected';b.dataset.id=c.id;b.innerHTML=`<img src="/portrait/${c.id}" alt=""><span>${c.name}</span><small>${c.id}</small>`;b.onclick=async()=>{const next=selected.includes(c.id)?selected.filter(k=>k!==c.id):[c.id,...selected];if(!next.length)return;await command({op:'cast',ids:next});selected=next;update()};$('#roster').append(b)}for(const [id,label] of Object.entries(names)){const b=document.createElement('button');b.textContent=label;b.onclick=()=>command({op:'scene',name:id});$('#scenes').append(b)}update();animate()}
-let busy=false;function animate(){if(!busy&&!document.hidden){busy=true;const im=new Image();im.onload=()=>{$('#frame').src=im.src;busy=false};im.onerror=()=>busy=false;im.src='/api/frame?w='+Math.min(1500,Math.round($('.actors').clientWidth*devicePixelRatio))+'&labels='+(showNames?'1':'0')+'&t='+Date.now()}setTimeout(animate,67)}
-$('#pause').onclick=()=>command({op:'pause',value:!state.paused});$('#motion').onclick=()=>{reduced=!reduced;$('#motion').classList.toggle('active',reduced);command({op:'motion',reduced})};$('#labels').onclick=()=>{showNames=!showNames;$('#labels').classList.toggle('active',showNames);$('#labels').setAttribute('aria-pressed',String(showNames));$('#labels').textContent=showNames?'隐藏名字':'显示名字'};$('#phase').onchange=e=>command({op:'activity',phase:e.target.value});$('#density').onchange=e=>command({op:'density',value:+e.target.value});$('#draft').oninput=()=>command({op:'activity',typing:true});setInterval(async()=>{state=(await(await fetch('/api/status')).json()).state;update()},1000);init();
+const $=s=>document.querySelector(s);
+let state,selected=[],showNames=false;
+const names={roam:'散散步',whisper:'交头接耳',chat:'聊聊天',cookie:'分饼干',paperball:'纸团大战',tea:'午后茶会',parade:'排队巡游',celebrate:'击掌庆祝',home:'窝在沙发',office:'一起赶工',dinner:'围炉聚餐',outing:'野餐出游',highfive:'击掌',photo:'合影',stargaze:'观星',power_max:'MAX · 星环共鸣',power_ultra:'ULTRA · 全员庆典'};
+function report(error){$('#feedback').textContent='操作未完成：'+error.message}
+async function command(data){
+  const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const j=await r.json();
+  if(!r.ok||j.ok===false)throw Error(j.error||'请稍后再试');
+  $('#feedback').textContent='';state=j.state;update();return j;
+}
+function send(data){return command(data).catch(report)}
+function update(){
+  if(!state)return;
+  selected=[...state.pool];
+  const effect=state.spectacle;
+  $('#status').textContent=(names[state.scene]||state.scene)+(state.effort?' / '+state.effort.toUpperCase():'')+(state.quiet?' / 安静陪伴':'')+(effect?' / '+Math.max(0,Math.ceil(effect.duration-effect.age))+'s':'');
+  $('#pause').textContent=state.paused?'继续':'暂停';
+  $('#motion').classList.toggle('active',state.reduced_motion);
+  $('#motion').setAttribute('aria-pressed',String(state.reduced_motion));
+  $('#phase').value=state.phase;
+  const effort=state.effort||'';
+  if(!Array.from($('#effort').options).some(o=>o.value===effort)){
+    const o=document.createElement('option');o.value=effort;o.textContent=effort;$('#effort').append(o);
+  }
+  $('#effort').value=effort;
+  if(state.density)$('#density').value=state.density;
+  document.querySelectorAll('.character').forEach(b=>{
+    const active=selected.includes(b.dataset.id);b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));
+  });
+  document.querySelectorAll('#scenes button').forEach(b=>b.classList.toggle('active',b.dataset.scene===state.scene));
+}
+async function init(){
+  const j=await(await fetch('/api/status')).json();state=j.state;
+  for(const c of j.catalog){
+    const b=document.createElement('button');b.className='character';b.dataset.id=c.id;
+    b.title=[c.temperament,c.inspiration].filter(Boolean).join(' · ');
+    const im=document.createElement('img');im.src='/portrait/'+encodeURIComponent(c.id);im.alt='';
+    const label=document.createElement('span');label.textContent=c.name;
+    const id=document.createElement('small');id.textContent=c.id;
+    const trait=document.createElement('small');trait.className='trait';trait.textContent=c.temperament||'';
+    b.append(im,label,id,trait);
+    b.onclick=()=>{const next=selected.includes(c.id)?selected.filter(k=>k!==c.id):[c.id,...selected];if(next.length)send({op:'cast',ids:next})};
+    $('#roster').append(b);
+  }
+  for(const [id,label] of Object.entries(names)){
+    if(!j.scenes.includes(id))continue;
+    const b=document.createElement('button');b.textContent=label;b.dataset.scene=id;b.onclick=()=>send({op:'scene',name:id});$('#scenes').append(b);
+  }
+  update();animate();
+}
+let busy=false,frameTimer=null;
+function animate(){
+  if(busy)return;
+  clearTimeout(frameTimer);frameTimer=null;
+  if(document.hidden){frameTimer=setTimeout(animate,100);return}
+  busy=true;
+  const started=performance.now(),im=new Image();
+  function complete(){
+    busy=false;
+    frameTimer=setTimeout(animate,Math.max(0,33-(performance.now()-started)));
+  }
+  im.onload=()=>{$('#frame').src=im.src;complete()};
+  im.onerror=complete;
+  im.src='/api/frame?w='+Math.min(1500,Math.round($('.actors').clientWidth*devicePixelRatio))+'&labels='+(showNames?'1':'0')+'&t='+Date.now();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&!busy){clearTimeout(frameTimer);animate()}
+});
+$('#pause').onclick=()=>send({op:'pause',value:!state.paused});
+$('#motion').onclick=()=>send({op:'motion',reduced:!state.reduced_motion});
+$('#labels').onclick=()=>{showNames=!showNames;$('#labels').classList.toggle('active',showNames);$('#labels').setAttribute('aria-pressed',String(showNames));$('#labels').textContent=showNames?'隐藏名字':'显示名字'};
+$('#phase').onchange=e=>send({op:'activity',phase:e.target.value});
+$('#effort').onchange=e=>{if(e.target.value)send({op:'effort',value:e.target.value})};
+$('#density').onchange=e=>send({op:'density',value:+e.target.value});
+$('#draft').oninput=()=>send({op:'activity',typing:true});
+let polling=false;
+setInterval(async()=>{
+  if(document.hidden||polling)return;
+  polling=true;
+  try{const r=await fetch('/api/status');if(r.ok){state=(await r.json()).state;update()}}catch(error){report(error)}finally{polling=false}
+},700);
+init().catch(report);
 </script></html>

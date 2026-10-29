@@ -12,6 +12,8 @@ struct Bridge {
     composer: Option<Rect>,
     popup: bool,
     last_input: Option<Instant>,
+    effort: Option<String>,
+    effort_baseline: bool,
     tx: mpsc::SyncSender<Value>,
     rx: mpsc::Receiver<Option<Value>>,
     latest: Option<Reply>,
@@ -29,7 +31,7 @@ fn bridge() -> Option<&'static Mutex<Bridge>> {
                 let _ = responses.try_send(reply);
             }
         }).ok()?;
-        Some(Mutex::new(Bridge { composer: None, popup: false, last_input: None, tx, rx, latest: None }))
+        Some(Mutex::new(Bridge { composer: None, popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
     }).as_ref()
 }
 
@@ -75,13 +77,27 @@ pub(crate) fn note_input() {
     }
 }
 
+/// Observe the effective upstream value; repeated redraws must not restart an effect.
+pub(crate) fn note_effort(effort: &str, baseline: bool) {
+    let effort = if effort.is_empty() { "none" } else { effort };
+    if let Some(lock) = bridge() {
+        if let Ok(mut b) = lock.lock() {
+            if baseline || b.effort.as_deref() != Some(effort) {
+                if !baseline { b.last_input = None; }
+                b.effort = Some(effort.to_owned());
+                b.effort_baseline = baseline;
+            }
+        }
+    }
+}
+
 pub(crate) fn frame(
     screen: Rect, model: &str, working: bool, hidden: bool,
     requester: crate::tui::FrameRequester,
 ) -> Option<crate::pets::AmbientPetDraw> {
     let lock = bridge()?;
     let mut b = lock.lock().ok()?;
-    requester.schedule_frame_in(Duration::from_millis(67));
+    requester.schedule_frame_in(Duration::from_millis(33));
     while let Ok(reply) = b.rx.try_recv() {
         b.latest = reply.map(|value| Reply {value, received: Instant::now()});
     }
@@ -104,7 +120,8 @@ pub(crate) fn frame(
     let typing = b.last_input.is_some_and(|t| t.elapsed() < Duration::from_millis(900));
     let _ = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":key,
         "visible":true,"width_px":width_px,"height_px":height_px,
-        "model":model,"phase":if working {"working"} else {"idle"},"typing":typing}));
+        "model":model,"phase":if working {"working"} else {"idle"},"typing":typing,
+        "effort":b.effort,"effort_baseline":b.effort_baseline}));
     let latest = b.latest.as_ref()?;
     if latest.received.elapsed() > Duration::from_millis(800)
         || latest.value.get("layout_key")?.as_str()? != key

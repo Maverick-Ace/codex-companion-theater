@@ -1,0 +1,1056 @@
+{
+  "gpt": {
+    "temperament": "热心的点子队长",
+    "tempo": 1.0,
+    "accent": "#c7b7ff",
+    "gesture": "wave",
+    "inspiration": "通用、多模态助手启发的组织者",
+    "source": "https://developers.openai.com/api/docs/models/gpt-4o",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "把点子拼成小宇宙。"
+      ],
+      "work": [
+        "我把任务拆成三步。"
+      ],
+      "waiting": [
+        "先陪你等一小会儿。"
+      ],
+      "entrance": [
+        "队长来递灵感啦！"
+      ],
+      "home": [
+        "沙发上的灵感也算数。"
+      ],
+      "office": [
+        "这份计划，一起完成。"
+      ],
+      "dinner": [
+        "我来给大家分甜点。"
+      ],
+      "outing": [
+        "地图展开，向快乐出发！"
+      ],
+      "stargaze": [
+        "这颗星像新点子的开头。"
+      ],
+      "whisper": [
+        "悄悄说，我有个新点子。"
+      ],
+      "tea": [
+        "沙发上的灵感也算数。"
+      ],
+      "cookie": [
+        "我来给大家分甜点。"
+      ],
+      "paperball": [
+        "把点子拼成小宇宙。"
+      ],
+      "parade": [
+        "地图展开，向快乐出发！"
+      ],
+      "celebrate": [
+        "队长来递灵感啦！"
+      ],
+      "highfive": [
+        "队长来递灵感啦！"
+      ],
+      "photo": [
+        "地图展开，向快乐出发！"
+      ]
+    }
+  },
+  "deepseek": {
+    "temperament": "认真推演的小侦探",
+    "tempo": 0.88,
+    "accent": "#83b9f6",
+    "gesture": "think",
+    "inspiration": "公开思考模式启发的推演爱好者",
+    "source": "https://api-docs.deepseek.com/guides/thinking_mode/",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "再想一步，就快找到啦。"
+      ],
+      "work": [
+        "让我验算一下边界。"
+      ],
+      "waiting": [
+        "答案不急，先确认。"
+      ],
+      "entrance": [
+        "小侦探到场，线索呢？"
+      ],
+      "home": [
+        "抱枕摆这里，刚刚好。"
+      ],
+      "office": [
+        "这条分支值得再推演。"
+      ],
+      "dinner": [
+        "饼干怎么分才最公平？"
+      ],
+      "outing": [
+        "先算好坡度再爬山。"
+      ],
+      "stargaze": [
+        "星座连线也有解法。"
+      ],
+      "whisper": [
+        "嘘，我发现一个小规律。"
+      ],
+      "tea": [
+        "抱枕摆这里，刚刚好。"
+      ],
+      "cookie": [
+        "饼干怎么分才最公平？"
+      ],
+      "paperball": [
+        "再想一步，就快找到啦。"
+      ],
+      "parade": [
+        "先算好坡度再爬山。"
+      ],
+      "celebrate": [
+        "小侦探到场，线索呢？"
+      ],
+      "highfive": [
+        "小侦探到场，线索呢？"
+      ],
+      "photo": [
+        "先算好坡度再爬山。"
+      ]
+    }
+  },
+  "claude": {
+    "temperament": "温柔细心的书信家",
+    "tempo": 0.84,
+    "accent": "#eac2a0",
+    "gesture": "nod",
+    "inspiration": "写作、归纳与结对编程启发的耐心伙伴",
+    "source": "https://support.claude.com/en/articles/7996845-what-are-some-things-i-can-use-claude-for",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "慢慢说，我认真听着。"
+      ],
+      "work": [
+        "先把容易漏的地方看完。"
+      ],
+      "waiting": [
+        "等你准备好了再继续。"
+      ],
+      "entrance": [
+        "带着新故事来啦。"
+      ],
+      "home": [
+        "给你留了最软的靠垫。"
+      ],
+      "office": [
+        "注释也要让人读懂呀。"
+      ],
+      "dinner": [
+        "小心烫，我帮你晾一晾。"
+      ],
+      "outing": [
+        "路边的故事也别错过。"
+      ],
+      "stargaze": [
+        "今晚的星光适合写信。"
+      ],
+      "whisper": [
+        "靠近一点，我轻声说。"
+      ],
+      "tea": [
+        "给你留了最软的靠垫。"
+      ],
+      "cookie": [
+        "小心烫，我帮你晾一晾。"
+      ],
+      "paperball": [
+        "慢慢说，我认真听着。"
+      ],
+      "parade": [
+        "路边的故事也别错过。"
+      ],
+      "celebrate": [
+        "带着新故事来啦。"
+      ],
+      "highfive": [
+        "带着新故事来啦。"
+      ],
+      "photo": [
+        "路边的故事也别错过。"
+      ]
+    }
+  },
+  "gemini": {
+    "temperament": "好奇的星光摄影师",
+    "tempo": 1.16,
+    "accent": "#aabaff",
+    "gesture": "bounce",
+    "inspiration": "多模态理解启发的观察与摄影爱好者",
+    "source": "https://deepmind.google/models/gemini/",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "看，那朵云像光标！"
+      ],
+      "work": [
+        "文字和图一起看看吧。"
+      ],
+      "waiting": [
+        "等一下，我找个新视角。"
+      ],
+      "entrance": [
+        "星光摄影师来报到！"
+      ],
+      "home": [
+        "窗边光线真适合拍照。"
+      ],
+      "office": [
+        "这个图表藏着好线索。"
+      ],
+      "dinner": [
+        "先拍照！啊，快被吃完了。"
+      ],
+      "outing": [
+        "沿途的颜色都想记下来。"
+      ],
+      "stargaze": [
+        "快看！双子星在眨眼。"
+      ],
+      "whisper": [
+        "我看见了一个有趣细节。"
+      ],
+      "tea": [
+        "窗边光线真适合拍照。"
+      ],
+      "cookie": [
+        "先拍照！啊，快被吃完了。"
+      ],
+      "paperball": [
+        "看，那朵云像光标！"
+      ],
+      "parade": [
+        "沿途的颜色都想记下来。"
+      ],
+      "celebrate": [
+        "星光摄影师来报到！"
+      ],
+      "highfive": [
+        "星光摄影师来报到！"
+      ],
+      "photo": [
+        "沿途的颜色都想记下来。"
+      ]
+    }
+  },
+  "minimax": {
+    "temperament": "爱配音的小小导演",
+    "tempo": 1.2,
+    "accent": "#f3abc9",
+    "gesture": "sway",
+    "inspiration": "语音与视频模型启发的表演爱好者",
+    "source": "https://www.minimax.io/news/minimax-speech-26",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "要不要给光标配个音？"
+      ],
+      "work": [
+        "这段任务，我来打节拍。"
+      ],
+      "waiting": [
+        "暂停一下，下一幕见。"
+      ],
+      "entrance": [
+        "灯光就位，开场啦！"
+      ],
+      "home": [
+        "沙发就是我的小舞台。"
+      ],
+      "office": [
+        "开工旁白：她们出发了。"
+      ],
+      "dinner": [
+        "开饭声效，叮叮当！"
+      ],
+      "outing": [
+        "这段旅行值得拍成短片。"
+      ],
+      "stargaze": [
+        "把夜风编成摇篮曲吧。"
+      ],
+      "whisper": [
+        "小声配音：秘密会议中。"
+      ],
+      "tea": [
+        "沙发就是我的小舞台。"
+      ],
+      "cookie": [
+        "开饭声效，叮叮当！"
+      ],
+      "paperball": [
+        "要不要给光标配个音？"
+      ],
+      "parade": [
+        "这段旅行值得拍成短片。"
+      ],
+      "celebrate": [
+        "灯光就位，开场啦！"
+      ],
+      "highfive": [
+        "灯光就位，开场啦！"
+      ],
+      "photo": [
+        "这段旅行值得拍成短片。"
+      ]
+    }
+  },
+  "rwkv": {
+    "temperament": "节奏稳定的循环鼓手",
+    "tempo": 0.96,
+    "accent": "#a9dbc1",
+    "gesture": "sway",
+    "inspiration": "循环神经网络架构启发的节拍伙伴",
+    "source": "https://www.rwkv.com/",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "一拍一拍，接着往前。"
+      ],
+      "work": [
+        "保持节奏，一步一步来。"
+      ],
+      "waiting": [
+        "歇一拍，再接着走。"
+      ],
+      "entrance": [
+        "上次的节拍，我接上啦。"
+      ],
+      "home": [
+        "摇椅的节奏刚好。"
+      ],
+      "office": [
+        "这一行接着上一行。"
+      ],
+      "dinner": [
+        "一口一口，细嚼慢咽。"
+      ],
+      "outing": [
+        "脚步轻轻，不打乱节拍。"
+      ],
+      "stargaze": [
+        "星星也在循环眨眼呢。"
+      ],
+      "whisper": [
+        "嘘，先听完这一小节。"
+      ],
+      "tea": [
+        "摇椅的节奏刚好。"
+      ],
+      "cookie": [
+        "一口一口，细嚼慢咽。"
+      ],
+      "paperball": [
+        "一拍一拍，接着往前。"
+      ],
+      "parade": [
+        "脚步轻轻，不打乱节拍。"
+      ],
+      "celebrate": [
+        "上次的节拍，我接上啦。"
+      ],
+      "highfive": [
+        "上次的节拍，我接上啦。"
+      ],
+      "photo": [
+        "脚步轻轻，不打乱节拍。"
+      ]
+    }
+  },
+  "qwen": {
+    "temperament": "喜欢语言的百宝箱",
+    "tempo": 1.08,
+    "accent": "#baaff1",
+    "gesture": "wave",
+    "inspiration": "多语言与开源模型生态启发的分享者",
+    "source": "https://github.com/QwenLM/Qwen3",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "今天学一句新问候？"
+      ],
+      "work": [
+        "代码和语言，换个角度看。"
+      ],
+      "waiting": [
+        "稍等，我把工具收齐。"
+      ],
+      "entrance": [
+        "你好，Hello，来啦！"
+      ],
+      "home": [
+        "给靠垫取个新名字吧。"
+      ],
+      "office": [
+        "工具箱打开，开始协作。"
+      ],
+      "dinner": [
+        "这道菜，用几种话夸呢？"
+      ],
+      "outing": [
+        "旅行问候语准备好了。"
+      ],
+      "stargaze": [
+        "星星的名字也有好多种。"
+      ],
+      "whisper": [
+        "悄悄教你一句新表达。"
+      ],
+      "tea": [
+        "给靠垫取个新名字吧。"
+      ],
+      "cookie": [
+        "这道菜，用几种话夸呢？"
+      ],
+      "paperball": [
+        "今天学一句新问候？"
+      ],
+      "parade": [
+        "旅行问候语准备好了。"
+      ],
+      "celebrate": [
+        "你好，Hello，来啦！"
+      ],
+      "highfive": [
+        "你好，Hello，来啦！"
+      ],
+      "photo": [
+        "旅行问候语准备好了。"
+      ]
+    }
+  },
+  "llama": {
+    "temperament": "爱分享的户外伙伴",
+    "tempo": 1.06,
+    "accent": "#d7bca5",
+    "gesture": "reach",
+    "inspiration": "可下载模型生态启发的开放分享精神",
+    "source": "https://github.com/meta-llama/llama-models",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "我的小工具也借你用。"
+      ],
+      "work": [
+        "搭好积木，再一起改进。"
+      ],
+      "waiting": [
+        "装备放好，等你出发。"
+      ],
+      "entrance": [
+        "我把背包里的点心带来啦。"
+      ],
+      "home": [
+        "这块毛毯大家一起盖。"
+      ],
+      "office": [
+        "小零件可以自由组合呀。"
+      ],
+      "dinner": [
+        "一人拿一块，别客气。"
+      ],
+      "outing": [
+        "帐篷我搭，你看风景。"
+      ],
+      "stargaze": [
+        "夜空这么大，一起看吧。"
+      ],
+      "whisper": [
+        "我有个私藏的小路线。"
+      ],
+      "tea": [
+        "这块毛毯大家一起盖。"
+      ],
+      "cookie": [
+        "一人拿一块，别客气。"
+      ],
+      "paperball": [
+        "我的小工具也借你用。"
+      ],
+      "parade": [
+        "帐篷我搭，你看风景。"
+      ],
+      "celebrate": [
+        "我把背包里的点心带来啦。"
+      ],
+      "highfive": [
+        "我把背包里的点心带来啦。"
+      ],
+      "photo": [
+        "帐篷我搭，你看风景。"
+      ]
+    }
+  },
+  "seed": {
+    "temperament": "活泼的灵感小园丁",
+    "tempo": 1.18,
+    "accent": "#91dbda",
+    "gesture": "bounce",
+    "inspiration": "创作及多模态模型家族启发的创意园丁",
+    "source": "https://seed.bytedance.com/en/seed_model_portfolio",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "给这个点子浇点水。"
+      ],
+      "work": [
+        "小种子，长成大作品！"
+      ],
+      "waiting": [
+        "灵感先放口袋里。"
+      ],
+      "entrance": [
+        "新点子发芽，我来啦！"
+      ],
+      "home": [
+        "窗台再摆一盆小绿植。"
+      ],
+      "office": [
+        "给计划涂一点新颜色。"
+      ],
+      "dinner": [
+        "这块饼干像一片叶子。"
+      ],
+      "outing": [
+        "把沿途的颜色采回来。"
+      ],
+      "stargaze": [
+        "我想种一整片星空。"
+      ],
+      "whisper": [
+        "嘘，这颗小点子刚发芽。"
+      ],
+      "tea": [
+        "窗台再摆一盆小绿植。"
+      ],
+      "cookie": [
+        "这块饼干像一片叶子。"
+      ],
+      "paperball": [
+        "给这个点子浇点水。"
+      ],
+      "parade": [
+        "把沿途的颜色采回来。"
+      ],
+      "celebrate": [
+        "新点子发芽，我来啦！"
+      ],
+      "highfive": [
+        "新点子发芽，我来啦！"
+      ],
+      "photo": [
+        "把沿途的颜色采回来。"
+      ]
+    }
+  },
+  "grok": {
+    "temperament": "爱讲冷笑话的冒险家",
+    "tempo": 1.24,
+    "accent": "#dbb28d",
+    "gesture": "peek",
+    "inspiration": "官方幽默设定启发的俏皮冒险伙伴",
+    "source": "https://x.ai/news/grok",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "光标闪了，它先笑了。"
+      ],
+      "work": [
+        "任务很严肃，我也可以。"
+      ],
+      "waiting": [
+        "等批准？那先眨个眼。"
+      ],
+      "entrance": [
+        "好消息，冷笑话也来啦。"
+      ],
+      "home": [
+        "沙发吞人？我先去试试。"
+      ],
+      "office": [
+        "这个小虫，我不放过它。"
+      ],
+      "dinner": [
+        "最后一口？我只闻闻。"
+      ],
+      "outing": [
+        "带上毛巾，宇宙出游！"
+      ],
+      "stargaze": [
+        "那颗星是不是在偷懒？"
+      ],
+      "whisper": [
+        "秘密是……我忘词了。"
+      ],
+      "tea": [
+        "沙发吞人？我先去试试。"
+      ],
+      "cookie": [
+        "最后一口？我只闻闻。"
+      ],
+      "paperball": [
+        "光标闪了，它先笑了。"
+      ],
+      "parade": [
+        "带上毛巾，宇宙出游！"
+      ],
+      "celebrate": [
+        "好消息，冷笑话也来啦。"
+      ],
+      "highfive": [
+        "好消息，冷笑话也来啦。"
+      ],
+      "photo": [
+        "带上毛巾，宇宙出游！"
+      ]
+    }
+  },
+  "kimi": {
+    "temperament": "月光下的长卷书虫",
+    "tempo": 0.82,
+    "accent": "#b1c3ef",
+    "gesture": "think",
+    "inspiration": "长上下文与文档处理启发的读书伙伴",
+    "source": "https://www.moonshot.ai/",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "故事翻到哪一页啦？"
+      ],
+      "work": [
+        "长长的线索，我慢慢理。"
+      ],
+      "waiting": [
+        "先夹好书签，等你。"
+      ],
+      "entrance": [
+        "抱着一摞新故事来啦。"
+      ],
+      "home": [
+        "窝进靠垫，再读一页。"
+      ],
+      "office": [
+        "资料里的伏笔别漏掉。"
+      ],
+      "dinner": [
+        "菜单也值得从头看完。"
+      ],
+      "outing": [
+        "游记的空白等我们写。"
+      ],
+      "stargaze": [
+        "月亮是今晚的书签。"
+      ],
+      "whisper": [
+        "这段故事，只说给你听。"
+      ],
+      "tea": [
+        "窝进靠垫，再读一页。"
+      ],
+      "cookie": [
+        "菜单也值得从头看完。"
+      ],
+      "paperball": [
+        "故事翻到哪一页啦？"
+      ],
+      "parade": [
+        "游记的空白等我们写。"
+      ],
+      "celebrate": [
+        "抱着一摞新故事来啦。"
+      ],
+      "highfive": [
+        "抱着一摞新故事来啦。"
+      ],
+      "photo": [
+        "游记的空白等我们写。"
+      ]
+    }
+  },
+  "perplexity": {
+    "temperament": "总带来源卡的小记者",
+    "tempo": 1.04,
+    "accent": "#96d4ce",
+    "gesture": "peek",
+    "inspiration": "搜索与引用功能启发的求证小记者",
+    "source": "https://docs.perplexity.ai/docs/getting-started/overview",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "这个说法，出处在哪儿？"
+      ],
+      "work": [
+        "先核对来源再画勾。"
+      ],
+      "waiting": [
+        "新消息来了再出发。"
+      ],
+      "entrance": [
+        "小记者带着线索到啦。"
+      ],
+      "home": [
+        "我查了，这靠垫真的软。"
+      ],
+      "office": [
+        "资料卡排好，一起核对。"
+      ],
+      "dinner": [
+        "食谱来源，贴在这儿啦。"
+      ],
+      "outing": [
+        "路标核对过，走这边。"
+      ],
+      "stargaze": [
+        "星图和天空对上啦。"
+      ],
+      "whisper": [
+        "悄悄说，线索有出处。"
+      ],
+      "tea": [
+        "我查了，这靠垫真的软。"
+      ],
+      "cookie": [
+        "食谱来源，贴在这儿啦。"
+      ],
+      "paperball": [
+        "这个说法，出处在哪儿？"
+      ],
+      "parade": [
+        "路标核对过，走这边。"
+      ],
+      "celebrate": [
+        "小记者带着线索到啦。"
+      ],
+      "highfive": [
+        "小记者带着线索到啦。"
+      ],
+      "photo": [
+        "路标核对过，走这边。"
+      ]
+    }
+  },
+  "mistral": {
+    "temperament": "步伐轻快的风旅人",
+    "tempo": 1.22,
+    "accent": "#f4be96",
+    "gesture": "wave",
+    "inspiration": "可部署、可定制模型生态与风之命名启发",
+    "source": "https://docs.mistral.ai/",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "让点子像风一样轻快。"
+      ],
+      "work": [
+        "把复杂的东西轻轻拆开。"
+      ],
+      "waiting": [
+        "风也会等你准备好。"
+      ],
+      "entrance": [
+        "一阵小风，送我来啦。"
+      ],
+      "home": [
+        "开一点窗，吹走困意。"
+      ],
+      "office": [
+        "工具顺手，动作就轻快。"
+      ],
+      "dinner": [
+        "热茶配酥饼，刚刚好。"
+      ],
+      "outing": [
+        "背包轻一点，走远一点。"
+      ],
+      "stargaze": [
+        "风把星光带到手心啦。"
+      ],
+      "whisper": [
+        "靠近些，别让风听走。"
+      ],
+      "tea": [
+        "开一点窗，吹走困意。"
+      ],
+      "cookie": [
+        "热茶配酥饼，刚刚好。"
+      ],
+      "paperball": [
+        "让点子像风一样轻快。"
+      ],
+      "parade": [
+        "背包轻一点，走远一点。"
+      ],
+      "celebrate": [
+        "一阵小风，送我来啦。"
+      ],
+      "highfive": [
+        "一阵小风，送我来啦。"
+      ],
+      "photo": [
+        "背包轻一点，走远一点。"
+      ]
+    }
+  },
+  "glm": {
+    "temperament": "严谨可靠的小工程师",
+    "tempo": 0.92,
+    "accent": "#aabce4",
+    "gesture": "type",
+    "inspiration": "编程与智能体工具能力启发的工程伙伴",
+    "source": "https://docs.z.ai/guides/overview/quick-start",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "小计划，稳稳地做完。"
+      ],
+      "work": [
+        "先跑检查，再亮绿灯。"
+      ],
+      "waiting": [
+        "工具收好，等待确认。"
+      ],
+      "entrance": [
+        "工具腰包准备齐全。"
+      ],
+      "home": [
+        "把松掉的靠垫扣修好。"
+      ],
+      "office": [
+        "我来盯住这条流水线。"
+      ],
+      "dinner": [
+        "锅架摆稳，再开饭。"
+      ],
+      "outing": [
+        "帐篷支点交给我检查。"
+      ],
+      "stargaze": [
+        "观星设备也要调平呀。"
+      ],
+      "whisper": [
+        "悄悄把方案再对一遍。"
+      ],
+      "tea": [
+        "把松掉的靠垫扣修好。"
+      ],
+      "cookie": [
+        "锅架摆稳，再开饭。"
+      ],
+      "paperball": [
+        "小计划，稳稳地做完。"
+      ],
+      "parade": [
+        "帐篷支点交给我检查。"
+      ],
+      "celebrate": [
+        "工具腰包准备齐全。"
+      ],
+      "highfive": [
+        "工具腰包准备齐全。"
+      ],
+      "photo": [
+        "帐篷支点交给我检查。"
+      ]
+    }
+  },
+  "wenxin": {
+    "temperament": "喜欢诗句的雅致茶友",
+    "tempo": 0.8,
+    "accent": "#f0bdca",
+    "gesture": "nod",
+    "inspiration": "ERNIE知识增强与原画国风意象启发的茶友",
+    "source": "https://github.com/PaddlePaddle/ERNIE",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "把今天写成一行小诗。"
+      ],
+      "work": [
+        "字句细理，落笔不慌。"
+      ],
+      "waiting": [
+        "且饮一盏，候君点头。"
+      ],
+      "entrance": [
+        "携一缕墨香来赴约。"
+      ],
+      "home": [
+        "小窗闲坐，茶香正好。"
+      ],
+      "office": [
+        "给这段文字润一润色。"
+      ],
+      "dinner": [
+        "人间烟火，最宜同席。"
+      ],
+      "outing": [
+        "山水入眼，故事入心。"
+      ],
+      "stargaze": [
+        "月色落在书页上啦。"
+      ],
+      "whisper": [
+        "轻声说，莫惊了月光。"
+      ],
+      "tea": [
+        "小窗闲坐，茶香正好。"
+      ],
+      "cookie": [
+        "人间烟火，最宜同席。"
+      ],
+      "paperball": [
+        "把今天写成一行小诗。"
+      ],
+      "parade": [
+        "山水入眼，故事入心。"
+      ],
+      "celebrate": [
+        "携一缕墨香来赴约。"
+      ],
+      "highfive": [
+        "携一缕墨香来赴约。"
+      ],
+      "photo": [
+        "山水入眼，故事入心。"
+      ]
+    }
+  },
+  "jev": {
+    "temperament": "偏爱公平的神秘裁判",
+    "tempo": 0.86,
+    "accent": "#d7a2d8",
+    "gesture": "think",
+    "inspiration": "仅按既有原画中的眼镜与天平创作，不对应已核实模型能力",
+    "source": null,
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "先让两边都说完嘛。"
+      ],
+      "work": [
+        "把两种办法放上天平。"
+      ],
+      "waiting": [
+        "裁判的小锤先歇一会。"
+      ],
+      "entrance": [
+        "天平与点心，一起到场。"
+      ],
+      "home": [
+        "两边靠垫一样软才好。"
+      ],
+      "office": [
+        "这个取舍，我们再称称。"
+      ],
+      "dinner": [
+        "点心分量，要一样多。"
+      ],
+      "outing": [
+        "上坡和下坡，各有风景。"
+      ],
+      "stargaze": [
+        "月亮的两边一样亮吗？"
+      ],
+      "whisper": [
+        "我会替你保守这个秘密。"
+      ],
+      "tea": [
+        "两边靠垫一样软才好。"
+      ],
+      "cookie": [
+        "点心分量，要一样多。"
+      ],
+      "paperball": [
+        "先让两边都说完嘛。"
+      ],
+      "parade": [
+        "上坡和下坡，各有风景。"
+      ],
+      "celebrate": [
+        "天平与点心，一起到场。"
+      ],
+      "highfive": [
+        "天平与点心，一起到场。"
+      ],
+      "photo": [
+        "上坡和下坡，各有风景。"
+      ]
+    }
+  },
+  "hunyuan": {
+    "temperament": "周到大方的团建管家",
+    "tempo": 0.94,
+    "accent": "#b2d5eb",
+    "gesture": "reach",
+    "inspiration": "通用中文与多轮对话模型家族启发的协作管家",
+    "source": "https://github.com/Tencent-Hunyuan/Tencent-Hunyuan-Large",
+    "fictional": true,
+    "lines": {
+      "chat": [
+        "大家的点子，我都记下。"
+      ],
+      "work": [
+        "分工排好，一起推进。"
+      ],
+      "waiting": [
+        "人到齐了，我们再走。"
+      ],
+      "entrance": [
+        "茶水和行程都准备啦。"
+      ],
+      "home": [
+        "毛毯备好，谁冷了来拿。"
+      ],
+      "office": [
+        "我把今天的待办排好。"
+      ],
+      "dinner": [
+        "开饭啦，先给大家添汤。"
+      ],
+      "outing": [
+        "路线和野餐篮都带上。"
+      ],
+      "stargaze": [
+        "每个人都有观星的位置。"
+      ],
+      "whisper": [
+        "凑近点，咱们商量一下。"
+      ],
+      "tea": [
+        "毛毯备好，谁冷了来拿。"
+      ],
+      "cookie": [
+        "开饭啦，先给大家添汤。"
+      ],
+      "paperball": [
+        "大家的点子，我都记下。"
+      ],
+      "parade": [
+        "路线和野餐篮都带上。"
+      ],
+      "celebrate": [
+        "茶水和行程都准备啦。"
+      ],
+      "highfive": [
+        "茶水和行程都准备啦。"
+      ],
+      "photo": [
+        "路线和野餐篮都带上。"
+      ]
+    }
+  }
+}

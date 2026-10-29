@@ -9,7 +9,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
-from .world import World, CAST, NAMES, SCENES
+from .world import World, CAST, NAMES, SCENES, PERSONALITIES
 from .render import Renderer, ROOT
 
 MAX_MESSAGE = 65536
@@ -47,6 +47,7 @@ class Theater:
         self.last = time.monotonic()
         self.frame_id = 0
         self.last_geometry = None
+        self.native_effort = None
 
     def advance(self):
         now = time.monotonic()
@@ -61,6 +62,13 @@ class Theater:
             op = message.get("op", "status")
             if op == "layout":
                 # The TUI sends only display metadata; never a draft or conversation.
+                if message.get("effort") is not None:
+                    incoming = (message["effort"], bool(message.get("effort_baseline")))
+                    if incoming != self.native_effort:
+                        # A steady native frame must not undo a manual local preview.
+                        baseline = self.native_effort is None or incoming[1]
+                        self.world.set_effort(incoming[0], baseline=baseline)
+                        self.native_effort = incoming
                 self.world.activity(message.get("phase"), message.get("model"), message.get("typing",False))
                 key = str(message["layout_key"])
                 if not message.get("visible", True):
@@ -90,17 +98,21 @@ class Theater:
             elif op == "motion":
                 self.world.reduced_motion = bool(message.get("reduced",True))
             elif op == "density":
-                self.world.density = max(1,min(5,int(message["value"])))
-                self.world._populate(self.world.pool[:self.world.density])
+                self.world.set_density(int(message["value"]))
+            elif op == "effort":
+                self.world.set_effort(message["value"])
             elif op == "activity":
                 event = message.get("event")
                 phase = {"UserPromptSubmit":"working", "PreToolUse":"working", "PermissionRequest":"waiting",
                          "Stop":"ready", "Interrupt":"idle", "SessionStart":"idle"}.get(event, message.get("phase"))
-                self.world.activity(phase, message.get("model"), message.get("typing",False))
+                self.world.activity(phase, message.get("model"), message.get("typing",False),
+                                    effort=message.get("effort"))
             elif op not in ("status","catalog","hello"):
                 raise ValueError("unknown command")
             return {"v":1,"ok":True,"state":self.world.snapshot(),"geometry":self.last_geometry,
-                    "catalog":[{"id":k,"name":NAMES[k]} for k in CAST],"scenes":["roam"]+list(SCENES)}
+                    "catalog":[{"id":k,"name":NAMES[k],**{field:PERSONALITIES[k][field]
+                                for field in ("temperament","tempo","accent","gesture","inspiration")}}
+                               for k in CAST],"scenes":["roam"]+list(SCENES)}
 
 class UnixServer(socketserver.ThreadingUnixStreamServer):
     daemon_threads = True
