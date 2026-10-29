@@ -175,6 +175,12 @@ class Theater:
 
 class UnixServer(socketserver.ThreadingUnixStreamServer):
     daemon_threads = True
+
+    def service_actions(self):
+        # Also stop if the launcher was killed without a catchable signal.
+        owner = os.environ.get('CODEX_THEATER_OWNER_PID')
+        if owner and os.getppid() != int(owner):
+            raise SystemExit(0)
     def __init__(self,path,theater):
         self.theater = theater
         super().__init__(str(path),UnixHandler)

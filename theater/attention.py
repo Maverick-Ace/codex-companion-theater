@@ -32,6 +32,8 @@ class Attention:
         self.focus_start = None
         self.focus_until = -100.0
         self.look_schedules = {}
+        self.approaches = {}
+        self.focus_x = None
 
     def geometry(self, width, height, labels=False):
         self.width, self.height = int(width), int(height)
@@ -51,6 +53,8 @@ class Attention:
         self.focus_start = None
         self.focus_until = -100.0
         self.look_schedules.clear()
+        self.approaches.clear()
+        self.focus_x = None
         for a in world.actors:
             a.reaction = None
             a.attention = None
@@ -72,6 +76,16 @@ class Attention:
             return
         if self.focus_start is None or world.t > self.focus_until:
             self.focus_start = world.t
+            self.focus_x = self.cursor['x']
+            # Keep left/right order, but vary spacing, reaction delay and pace.
+            actors = sorted(world.actors, key=lambda actor: actor.x)
+            weights = [world.rng.uniform(.94, 1.16) for _ in actors]
+            offsets = [0.0]
+            for weight in weights[1:]:offsets.append(offsets[-1] + weight)
+            midpoint = (offsets[0] + offsets[-1]) / 2
+            self.approaches = {a.id: {'offset': offset-midpoint,
+                'delay': world.rng.uniform(.06, .42), 'pace': world.rng.uniform(.82, 1.12)}
+                for a, offset in zip(actors, offsets)}
             # A sampled subset occasionally checks the output, while the others
             # keep watching the input. Steady layout frames do not restart it.
             count = max(1, len(world.actors) // 2)
@@ -180,16 +194,20 @@ class Attention:
         self.reactions = {k: v for k, v in self.reactions.items() if k in active_ids}
         following = (self.cursor is not None and world.t < self.focus_until and not world.spectacle
                      and world.phase not in ('waiting', 'blocked'))
+        if following:
+            self.focus_x += (self.cursor['x']-self.focus_x)*(1-math.exp(-dt*4.5))
         for index, (a, cx, floor, size) in enumerate(self._layout(world)):
             a.attention = None
             a.reaction = None
             if following:
-                offset = (index - (len(world.actors) - 1) / 2) * size * .58
-                half_span = (len(world.actors) - 1) * size * .29
-                left = size / 2 + .07 * (self.width - size) + half_span
-                right = size / 2 + .93 * (self.width - size) - half_span
-                center = max(left, min(right, self.cursor['x'] * self.width))
-                a.target = stage_x(center + offset, self.width, size)
+                plan = self.approaches[a.id]
+                extent = max((abs(p['offset']) for p in self.approaches.values()), default=0)
+                spacing = min(size, .84*(self.width-size)/max(1, extent*2))
+                half_span = extent*spacing
+                left = size/2 + .07*(self.width-size) + half_span
+                right = size/2 + .93*(self.width-size) - half_span
+                center = max(left, min(right, self.focus_x*self.width))
+                a.target = stage_x(center + plan['offset']*spacing, self.width, size)
                 style = FOCUS_STYLES[sum(map(ord, a.id)) % len(FOCUS_STYLES)]
                 look = self.look_schedules.get(a.id)
                 if look and world.t >= look['next']:
@@ -198,7 +216,8 @@ class Attention:
                 look_up = bool(look and world.t < look['until'])
                 a.attention = {'kind': 'input', 'style': style, 'look_up': look_up,
                                'x': self.cursor['x'], 'y': self.cursor['y'],
-                               'age': world.t - self.focus_start}
+                               'age': world.t - self.focus_start,
+                               'delay': plan['delay'], 'pace': plan['pace']}
             reaction = self.reactions.get(a.id)
             if not reaction:
                 continue
@@ -226,7 +245,7 @@ class Attention:
                 if self.point:
                     target_x = stage_x(self.point['x'] * self.width - a.facing * size * .10, self.width, size)
                     a.x += (target_x - a.x) * (1 - math.exp(-dt * 28))
-                    lift = max(-.04, min(.9, (floor - self.point['y'] * self.height) / size - .78))
+                    lift = max(-.04, min(max(0, floor/size-1.18), (floor - self.point['y'] * self.height) / size - .78))
                 a.target, a.v = a.x, 0.0
                 reaction['lift'] = lift
             elif kind == 'land':

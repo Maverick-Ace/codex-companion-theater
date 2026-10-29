@@ -463,11 +463,15 @@ class World:
             observing = a.attention is not None
             reacting = a.reaction is not None
             airborne = reacting and a.reaction['kind'] in ('jump', 'caught', 'land')
-            speed = (.92 if observing else .14)*a.tempo
-            desired = max(-speed, min(speed, (a.target-a.x)*(7 if observing else 1.8)))
+            ramp = 1.0
+            if observing:
+                ramp = max(0, min(1, (a.attention['age']-a.attention['delay'])/.5))
+                ramp = ramp*ramp*(3-2*ramp)
+            speed = (.43*a.attention['pace']*ramp if observing else .14)*a.tempo
+            desired = max(-speed, min(speed, (a.target-a.x)*(4 if observing else 1.8)))
             if (quiet and not observing) or self.reduced_motion or airborne or 0 <= self.t-a.arrival < 1.2:
                 desired = 0
-            a.v += (desired-a.v)*(1-math.exp(-dt*(15 if observing else 9)))
+            a.v += (desired-a.v)*(1-math.exp(-dt*(7 if observing else 9)))
             a.x = max(.07, min(.93, a.x+a.v*dt))
             a.travel += abs(a.v)*dt
             if self.reduced_motion:

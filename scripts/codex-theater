@@ -11,12 +11,19 @@ import tempfile
 import time
 
 ROOT=Path(__file__).resolve().parents[1]
-def main():
+def run():
     args=sys.argv[1:]
     if args and args[0]=='--preview':
         port=args[1] if len(args)>1 else '0'
         with tempfile.TemporaryDirectory(prefix='companion-preview-') as runtime:
-            return subprocess.call([sys.executable,'-m','theater.cli','serve','--runtime',runtime,'--port',port],cwd=ROOT)
+            preview=None
+            try:
+                preview=subprocess.Popen([sys.executable,'-m','theater.cli','serve','--runtime',runtime,'--port',port],cwd=ROOT,
+                    env=dict(os.environ,CODEX_THEATER_OWNER_PID=str(os.getpid())),stdin=subprocess.DEVNULL)
+                return preview.wait()
+            finally:
+                for sig in (signal.SIGHUP,signal.SIGTERM):signal.signal(sig,signal.SIG_IGN)
+                stop(preview)
     manifest=Path(os.getenv('CODEX_THEATER_MANIFEST',str(ROOT/'build/current.json'))).expanduser().resolve()
     if not manifest.exists():
         sys.exit('Build the native adapter first: python3 scripts/build_cli.py --source /path/to/codex')
@@ -25,11 +32,13 @@ def main():
     with tempfile.TemporaryDirectory(prefix='codex-theater-',dir=os.getenv('XDG_RUNTIME_DIR')) as runtime:
         runtime=str(Path(runtime).resolve())
         env=dict(os.environ,CODEX_THEATER_SOCKET=str(Path(runtime)/'control.sock'))
+        env['CODEX_THEATER_OWNER_PID']=str(os.getpid())
         env['PYTHONPATH']=str(ROOT)+os.pathsep+env.get('PYTHONPATH','')
         with open(Path(runtime)/'engine.log','w+') as log:
-            engine=subprocess.Popen([sys.executable,'-m','theater.cli','serve','--runtime',runtime],cwd=ROOT,env=env,stdout=log,stderr=log,start_new_session=True)
+            engine=cli=None
             instance_path=None
             try:
+                engine=subprocess.Popen([sys.executable,'-m','theater.cli','serve','--runtime',runtime],cwd=ROOT,env=env,stdin=subprocess.DEVNULL,stdout=log,stderr=log,start_new_session=True)
                 deadline=time.monotonic()+3
                 while not Path(env['CODEX_THEATER_SOCKET']).exists():
                     if engine.poll() is not None or time.monotonic()>deadline:
@@ -51,9 +60,29 @@ def main():
                 cli=subprocess.Popen([str(binary),*args],env=env)
                 return cli.wait()
             finally:
+                # Repeated close signals must not interrupt bounded cleanup.
+                for sig in (signal.SIGHUP,signal.SIGTERM):signal.signal(sig,signal.SIG_IGN)
+                stop(cli)
                 if instance_path is not None:instance_path.unlink(missing_ok=True)
-                engine.terminate()
-                try:engine.wait(timeout=2)
-                except subprocess.TimeoutExpired:engine.kill();engine.wait()
+                stop(engine)
+
+def stop(process):
+    if process is None:return
+    if process.poll() is None:
+        try:process.terminate()
+        except ProcessLookupError:pass
+    try:process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        process.kill();process.wait(timeout=2)
+
+
+def main():
+    def closed(signum,frame):raise SystemExit(128+signum)
+    previous={sig:signal.getsignal(sig) for sig in (signal.SIGHUP,signal.SIGTERM,signal.SIGINT)}
+    try:
+        for sig in (signal.SIGHUP,signal.SIGTERM):signal.signal(sig,closed)
+        return run()
+    finally:
+        for sig,handler in previous.items():signal.signal(sig,handler)
 
 if __name__=='__main__':sys.exit(main())

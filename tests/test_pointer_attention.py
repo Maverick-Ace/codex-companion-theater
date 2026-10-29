@@ -148,8 +148,9 @@ class CaretWatchingTests(unittest.TestCase):
         for actor in world.actors: actor.x = actor.target = .1
         world.activity(typing=True, cursor={'x': .75, 'y': 1.1})
         advance(world, .5)
-        self.assertTrue(all(a.x > .3 for a in world.actors))
-        self.assertTrue(all(a.gesture == 'run' for a in world.actors))
+        self.assertTrue(all(.1 <= a.x < .3 for a in world.actors))
+        self.assertTrue(any(a.gesture == 'run' for a in world.actors))
+        self.assertGreater(len({round(a.x,3) for a in world.actors}),1)
         glancers = set()
         for _ in range(24):
             world.activity(typing=True, cursor={'x': .75, 'y': 1.1})

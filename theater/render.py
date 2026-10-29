@@ -136,7 +136,14 @@ class Renderer:
                 angle=(7 if partner==0 else -7)*(.65+.35*math.sin(t*3))
                 sprite=sprite.rotate(-angle,resample=Image.Resampling.BICUBIC,expand=True)
                 y=actor_floor-sprite.height+pad
-            composite_clipped(canvas,sprite,x-sprite.width//2,y)
+            sprite_left = x-sprite.width//2
+            if reaction and reaction['kind'] in ('jump','caught','land'):
+                # Use the final rotated alpha bounds, including hair and rig padding.
+                bounds = sprite.getbbox()
+                if bounds:
+                    y = max(2-bounds[1], min(height-2-bounds[3], y))
+                    sprite_left = max(2-bounds[0], min(width-2-bounds[2], sprite_left))
+            composite_clipped(canvas,sprite,sprite_left,y)
             if 'departure' in a:continue
             accents(canvas,state,a,x,actor_floor,actor_size,still=actor_still)
             if not active_portal:
