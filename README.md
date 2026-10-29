@@ -4,9 +4,9 @@
 
 ![剧场预览](artifacts/preview.png)
 
-[查看实际引擎导出的动画](artifacts/theater-demo.webp)
+[查看实际引擎导出的动画](artifacts/theater-demo.webp) · [传送与交头接耳演示](artifacts/effects-demo.webp)
 
-每人 16 个姿势，共 272 帧透明素材。场景包括散步、聊天、分饼干、纸团打闹、茶会、巡游和完成庆祝。文心保持轮椅移动，RWKV 保留鸟翼和鸟足。对白是本地情景脚本，不调用各家模型 API；输入内容、历史对话和工具内容不传给剧场。
+每人 16 个姿势，共 272 帧透明素材。场景包括散步、聊天、分饼干、纸团打闹、茶会、巡游、交头接耳和完成庆祝。人物可相互重叠、交叉走动；随机两位会靠近、倾身并轮流低声讨论。切换角色时，旧角色消散、新角色伴随传送环和粒子出现；轻柔模式减少这些动态效果。文心保持轮椅移动，RWKV 保留鸟翼和鸟足。对白是本地情景脚本，不调用各家模型 API；输入内容、历史对话和工具内容不传给剧场。
 
 ## 先看预览
 
@@ -66,7 +66,7 @@ python -m theater.cli instances
 python -m theater.cli --instance <实例ID> scene tea
 ```
 
-场景 ID 为 `roam`、`chat`、`cookie`、`paperball`、`tea`、`parade`、`celebrate`。可用 `--socket <路径>` 显式指定控制端点。插件工具支持可选的 `instance_id`；不会按工作目录猜测目标窗口。实例登记只包含控制地址与进程/目录信息，不含输入、对话或工具内容。
+场景 ID 为 `roam`、`whisper`、`chat`、`cookie`、`paperball`、`tea`、`parade`、`celebrate`。可用 `--socket <路径>` 显式指定控制端点。插件工具支持可选的 `instance_id`；不会按工作目录猜测目标窗口。实例登记只包含控制地址与进程/目录信息，不含输入、对话或工具内容。
 
 ## 插件与适配边界
 
@@ -97,7 +97,7 @@ hooks 需在 `/hooks` 中单独查看并信任。未启用 hooks 时，自由活
 
 角色目录 `assets/cast/<id>/` 包含提示词、原始生成 sheet 和 16 张提取帧，来源和作者见 [素材署名](assets/CREDITS.md) 与 `assets/cast/catalog.json`。Q 版动作图使用内置 image_gen 生成，ImageMagick 负责确定性切帧和基线对齐。原始参考立绘不随仓库分发；不同原设的许可分别记录，未被宣称为统一开源许可。
 
-对白存于 `config/scenes.json`。替换角色图或修改对白后重启引擎即可，无需改 Codex 源码。重新提取素材可运行 `python scripts/prepare_sprites.py`；已有提取帧会保留。
+对白存于 `config/scenes.json`。替换角色图或修改对白后重启引擎即可，无需改 Codex 源码。重新提取素材可运行 `python scripts/prepare_sprites.py`；已有提取帧会保留；修复素材切帧时可加 `--rebuild`。切帧会清理格子边缘混入的相邻姿势碎片，并保留主体和内部独立饰物，舞台合成也显式裁剪越界像素。
 
 ## 验证与当前限制
 
@@ -109,6 +109,6 @@ python scripts/verify_native.py --cwd /path/to/already-trusted-folder
 python scripts/verify_native.py --cwd /path/to/already-trusted-folder --disconnect
 ```
 
-已通过 19 项行为/协议/启动器测试、12 项原生图片发送/清理测试、2 项官方插件环境转发测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
+已通过 25 项行为/协议/启动器测试、12 项原生图片发送/清理测试、2 项官方插件环境转发测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
 
 当前只有 0.163.0 的迁移配置经过验证。Sixel、Windows、tmux 和 Zellij 尚未完成本项目的实际显示验证，可先使用网页预览。

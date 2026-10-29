@@ -28,14 +28,12 @@ class BehaviorTests(unittest.TestCase):
         for _ in range(35):w.tick(.05)
         self.assertFalse(w.snapshot()['quiet'])
 
-    def test_collision_order_and_boundaries(self):
+    def test_movement_stays_within_stage(self):
         w=World(9)
-        order=[a.id for a in w.actors]
         for _ in range(3600):
             w.tick(1/30)
-            self.assertEqual([a.id for a in sorted(w.actors,key=lambda a:a.x)],order)
             self.assertTrue(all(.069<=a.x<=.931 for a in w.actors))
-            # Rotation is intentionally disabled for this collision-only interval.
+            # Rotation is intentionally disabled for this movement-only interval.
             w.next_visit=w.t+100
 
     def test_all_seventeen_can_take_the_stage(self):

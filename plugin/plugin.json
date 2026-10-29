@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "companion-theater",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Control the local animated companion theater without sending conversation content.",
   "extensions": {
     "com.openai": {

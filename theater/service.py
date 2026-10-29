@@ -38,7 +38,7 @@ def request(path, message, timeout=1):
             return json.loads(file.readline(MAX_MESSAGE))
 
 class Theater:
-    def __init__(self, runtime, seed=7):
+    def __init__(self, runtime, seed=None):
         self.runtime = Path(runtime).resolve()
         self.runtime.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.world = World(seed)

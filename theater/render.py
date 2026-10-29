@@ -9,6 +9,26 @@ FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
 COLORS = {"gpt": "#c7b7ff", "deepseek": "#83b9f6", "claude": "#eac2a0",
           "gemini": "#bcb5fb", "seed": "#91dbda", "grok": "#dbb28d"}
 
+def composite_clipped(canvas, sprite, x, y):
+    """Clip source pixels explicitly; neither source nor destination may wrap."""
+    left,top=max(0,x),max(0,y)
+    right,bottom=min(canvas.width,x+sprite.width),min(canvas.height,y+sprite.height)
+    if right>left and bottom>top:
+        canvas.alpha_composite(sprite.crop((left-x,top-y,right-x,bottom-y)),(left,top))
+
+def portal(draw,x,floor,size,progress,seed):
+    strength=math.sin(math.pi*max(0,min(1,progress)))
+    radius=max(2,int(size*.42*strength))
+    color=(195,159,255,int(230*strength))
+    draw.ellipse((x-radius,floor-7,x+radius,floor+1),outline=color,width=2)
+    for n in range(18):
+        angle=n*2.399+seed
+        spread=(.12+((n*17)%19)/28)*size*strength
+        px=x+math.cos(angle+progress*2)*spread*.65
+        py=floor-size*(progress*.8+(n%5)*.035)
+        r=1+(n%3==0)
+        draw.ellipse((px-r,py-r,px+r,py+r),fill=(218,198,255,int(220*strength)))
+
 class Renderer:
     def __init__(self, assets=None):
         self.assets = Path(assets or ROOT / "assets/cast")
@@ -49,14 +69,37 @@ class Renderer:
         floor = height - (int(19 * scale) if labels else 2)
         t = state["time"]
         quiet = state["quiet"]
-        for i, a in enumerate(state["cast"]):
+        for i, a in enumerate(state.get('departing',[])+state["cast"]):
             sprite = self.sprite(a, t, size)
             x = int(a["x"] * (width - size) + size / 2)
             bob = 0 if state["reduced_motion"] or quiet else (math.sin(t*2.4+i) * .8)
             if state["scene"] == "celebrate" and not quiet:
                 bob -= max(0, math.sin(state["scene_age"] * 5 + i)) * 7 * scale
             y = floor - sprite.height + int(bob)
-            canvas.alpha_composite(sprite, (x - sprite.width // 2, y))
+            active_portal=False
+            if not state['reduced_motion'] and not quiet:
+                if 'departure' in a:
+                    progress=(t-a['departure'])/1.2
+                    opacity=max(0,1-progress*2)
+                    active_portal=0<=progress<1
+                else:
+                    progress=(t-a.get('arrival',-10))/1.2
+                    opacity=max(0,min(1,(progress-.45)/.55)) if 0<=progress<1 else 1
+                    active_portal=0<=progress<1
+                if active_portal:
+                    sprite=sprite.copy()
+                    sprite.putalpha(sprite.getchannel('A').point(lambda p:int(p*opacity)))
+                    portal(draw,x,floor,size,progress,i*.7)
+            elif 'departure' in a:
+                continue
+            partners=[p for p in state['cast'] if p['id'] in state.get('pair',[])]
+            if state['scene']=='whisper' and a['id'] in state.get('pair',[]) and len(partners)==2 and abs(partners[0]['x']-partners[1]['x'])<.14 and not quiet and not state['reduced_motion']:
+                partner=state['pair'].index(a['id'])
+                angle=(7 if partner==0 else -7)*(.65+.35*math.sin(t*3))
+                sprite=sprite.rotate(-angle,resample=Image.Resampling.BICUBIC,expand=True)
+                y=floor-sprite.height
+            composite_clipped(canvas,sprite,x-sprite.width//2,y)
+            if 'departure' in a:continue
             if labels:
                 text = NAMES[a["id"]]
                 f = self.font(max(10, int(11*scale)))
@@ -75,6 +118,15 @@ class Renderer:
                 draw.text((bx+9,by+4-bb[1]),text,font=f,fill="#463859")
         # Tiny scene props are code-native shapes; character artwork is generated art.
         age = state["scene_age"]
+        if state['scene']=='whisper' and len(state.get('pair',[]))==2 and not quiet:
+            pair=[a for a in state['cast'] if a['id'] in state['pair']]
+            if len(pair)==2 and abs(pair[0]['x']-pair[1]['x'])<.1:
+                px=int(sum(a['x'] for a in pair)/2*(width-size)+size/2)
+                py=max(6,floor-size-9)
+                draw.rounded_rectangle((px-22,py-7,px+22,py+8),radius=7,fill='#f8f3ffec')
+                for j in range(3):
+                    dy=math.sin(t*4+j)*2
+                    draw.ellipse((px-11+j*10,py+dy-1,px-8+j*10,py+dy+2),fill='#8061a7')
         if state["scene"] in ("cookie", "paperball") and not quiet:
             px = int(width * (.5 + .25*math.sin(age*.65)))
             py = floor - int(15*scale + abs(math.sin(age*2))*18*scale)

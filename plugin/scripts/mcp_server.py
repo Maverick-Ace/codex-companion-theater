@@ -6,7 +6,7 @@ from transport import send
 
 TOOLS=[
  {"name":"theater_status","description":"Read local cast and current scene.","inputSchema":{"type":"object","properties":{}}},
- {"name":"theater_scene","description":"Select a local scripted scene. Does not call model APIs.","inputSchema":{"type":"object","properties":{"name":{"type":"string","enum":["roam","chat","cookie","paperball","tea","parade","celebrate"]}},"required":["name"]}},
+ {"name":"theater_scene","description":"Select a local scripted scene. Does not call model APIs.","inputSchema":{"type":"object","properties":{"name":{"type":"string","enum":["roam","whisper","chat","cookie","paperball","tea","parade","celebrate"]}},"required":["name"]}},
  {"name":"theater_cast","description":"Choose the local companion roster by character ID.","inputSchema":{"type":"object","properties":{"ids":{"type":"array","items":{"type":"string"},"minItems":1}},"required":["ids"]}},
  {"name":"theater_pause","description":"Pause or resume the local animation.","inputSchema":{"type":"object","properties":{"value":{"type":"boolean"}},"required":["value"]}},
  {"name":"theater_motion","description":"Set reduced motion for the local animation.","inputSchema":{"type":"object","properties":{"reduced":{"type":"boolean"}},"required":["reduced"]}},
@@ -16,7 +16,7 @@ for tool in TOOLS:
 
 def handle(m):
     method=m.get("method")
-    if method=="initialize":return {"protocolVersion":m.get("params",{}).get("protocolVersion","2024-11-05"),"capabilities":{"tools":{}},"serverInfo":{"name":"companion-theater","version":"0.1.1"}}
+    if method=="initialize":return {"protocolVersion":m.get("params",{}).get("protocolVersion","2024-11-05"),"capabilities":{"tools":{}},"serverInfo":{"name":"companion-theater","version":"0.2.0"}}
     if method=="ping":return {}
     if method=="tools/list":return {"tools":TOOLS}
     if method=="tools/call":

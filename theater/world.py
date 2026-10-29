@@ -27,6 +27,7 @@ class Actor:
     bubble: str = ""
     bubble_until: float = 0.0
     travel: float = 0.0
+    arrival: float = -10.0
 
 class World:
     def __init__(self, seed=7, cast=None, density=4):
@@ -34,6 +35,8 @@ class World:
         self.pool = list(cast or CAST)
         self.density = max(1, min(5, density))
         self.actors = []
+        self.departing = []
+        self.pair = []
         self.t = 0.0
         self.phase = "idle"
         self.model = ""
@@ -51,9 +54,12 @@ class World:
 
     def _populate(self, ids):
         old = {a.id: a for a in self.actors}
+        self.departing = [d for d in self.departing if d['id'] not in ids]
+        self.departing.extend(dict(asdict(a), departure=self.t) for a in self.actors if a.id not in ids)
         n = len(ids)
-        self.actors = [old.get(k, Actor(k, (i + 1) / (n + 1), (i + 1) / (n + 1)))
+        self.actors = [old.get(k, Actor(k, (i + 1) / (n + 1), (i + 1) / (n + 1), arrival=self.t if old else -10.0))
                        for i, k in enumerate(ids)]
+        self.pair = []
         self.generation += 1
 
     def set_cast(self, ids):
@@ -96,6 +102,7 @@ class World:
         if name not in SCENES and name != "roam":
             raise ValueError("unknown scene")
         self.scene, self.scene_start = name, self.t
+        self.pair = []
         self.scene_end = self.t + (12 if name in ("cookie", "paperball", "parade") else 9)
         self.next_scene = self.scene_end + self.rng.uniform(4, 8)
         for i, a in enumerate(self.actors):
@@ -106,9 +113,15 @@ class World:
                 a.target = .30 + i * .19
             elif name == "parade":
                 a.target = .14 + i * .17
+        if name == 'whisper' and len(self.actors)>1:
+            partners=self.rng.sample(self.actors,2)
+            partners.sort(key=lambda a:a.x)
+            self.pair=[a.id for a in partners]
+            center=max(.2,min(.8,sum(a.x for a in partners)/2))
+            for i,a in enumerate(partners):a.target=center+(i-.5)*.075
         if name in SCENES:
             lines = self.rng.choice(SCENES[name])
-            self.say(0, lines[0], 4)
+            if name != 'whisper':self.say(0, lines[0], 4)
             # Reply starts later, rather than two simultaneous speech balloons.
             self.reply = lines[1]
         return self.snapshot()
@@ -116,7 +129,7 @@ class World:
     def tick(self, dt):
         if self.paused:
             return
-        # Substeps preserve collision behavior after delayed frames, bounded to avoid catch-up storms.
+        # Substeps preserve smooth motion after delayed frames, bounded to avoid catch-up storms.
         remaining = max(0, min(float(dt), .5))
         while remaining > 1e-8:
             step = min(remaining, 1 / 60)
@@ -125,14 +138,16 @@ class World:
 
     def _step(self, dt):
         self.t += dt
+        self.departing=[a for a in self.departing if self.t-a['departure']<1.2]
         quiet = self.t < self.typing_until
         social = self.phase in ("idle", "ready") and not quiet
         age = self.t - self.scene_start
         if social and self.scene != "roam" and self.t >= self.scene_end:
             self.scene = "roam"
         if social and self.t >= self.next_scene:
-            self.start_scene(self.rng.choice(["chat", "cookie", "paperball", "tea", "parade"]))
-        if social and 4.1 < age < 4.2 and self.scene in SCENES:
+            self.start_scene(self.rng.choice(["chat", "cookie", "paperball", "tea", "parade", "whisper"]))
+            age=0
+        if social and 4.1 < age < 4.2 and self.scene in SCENES and self.scene!='whisper':
             self.say(1, getattr(self, "reply", "好呀。"), 3.5)
         if social and self.scene == "roam" and self.t >= self.next_roam:
             self.next_roam = self.t + self.rng.uniform(3, 6)
@@ -148,16 +163,12 @@ class World:
         if social and self.scene in ("cookie", "paperball", "parade") and age > 4:
             for i, a in enumerate(self.actors[:2]):
                 a.target = .5 + .29 * math.sin(age * .65 + i * 1.5)
-        ordered = sorted(self.actors, key=lambda a: a.x)
+        ordered = self.actors
         for i, a in enumerate(ordered):
             desired = max(-.14, min(.14, (a.target - a.x) * 1.8))
-            if quiet or self.reduced_motion:
+            if quiet or self.reduced_motion or 0<=self.t-a.arrival<1.2:
                 desired = 0.0
-            # Yield to an actor in front, preventing bodies from passing through each other.
-            if desired > 0 and i + 1 < len(ordered) and ordered[i+1].x - a.x < .12:
-                desired = min(desired, max(0, (ordered[i+1].x - a.x - .10) * 1.8))
-            if desired < 0 and i > 0 and a.x - ordered[i-1].x < .12:
-                desired = max(desired, min(0, (a.x - ordered[i-1].x - .10) * -1.8))
+            # Characters are layered sprites and can pass through each other.
             a.v += (desired - a.v) * (1 - math.exp(-dt * 9))
             a.x = max(.07, min(.93, a.x + a.v * dt))
             a.travel += abs(a.v) * dt
@@ -176,10 +187,13 @@ class World:
                 a.pose = "talk"
             else:
                 a.pose = "idle"
+            if social and self.scene=='whisper' and a.id in self.pair and abs(a.x-a.target)<.025 and not self.reduced_motion:
+                a.pose='talk' if int(age*1.4)%2==self.pair.index(a.id) else 'idle'
+                a.facing=1 if a.id==self.pair[0] else -1
 
     def snapshot(self):
         return {"time": round(self.t, 3), "scene": self.scene, "scene_age": self.t-self.scene_start,
                 "phase": self.phase, "model": self.model, "quiet": self.t < self.typing_until,
                 "paused": self.paused, "reduced_motion": self.reduced_motion,
                 "cast": [asdict(a) for a in self.actors], "pool": self.pool,
-                "generation": self.generation}
+                "generation": self.generation, "departing":self.departing, "pair":self.pair}
