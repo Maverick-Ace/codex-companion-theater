@@ -4,9 +4,9 @@
 
 ![剧场预览](artifacts/preview.png)
 
-[查看实际引擎导出的动画](artifacts/theater-demo.webp) · [传送与交头接耳演示](artifacts/effects-demo.webp) · [MAX / ULTRA 与生活场景](artifacts/ensemble-demo.webp)
+[查看实际引擎导出的动画](artifacts/theater-demo.webp) · [传送与交头接耳演示](artifacts/effects-demo.webp) · [MAX / ULTRA 与生活场景](artifacts/ensemble-demo.webp) · [入场与道具互动](artifacts/props-demo.webp)
 
-每人 16 个原画姿势，共 272 张透明素材；运行时以约 30 FPS 插值并驱动头部、左右发梢、双臂、下摆与双足八处关节。关节通过连续网格变形连接，文心的轮椅下半部保持固定。实际帧率取决于终端图片传输和机器性能。场景包括散步、聊天、分饼干、纸团打闹、茶会、巡游、交头接耳和完成庆祝。另有击掌、合影与观星的小互动。人物可相互重叠、交叉走动；随机两位会靠近、倾身并轮流低声讨论。切换角色时，旧角色消散、新角色伴随传送环和粒子出现；轻柔模式减少这些动态效果。文心保持轮椅移动，RWKV 保留鸟翼和鸟足。新增沙发休憩、一起办公、围炉聚餐和露营野餐四类场景，配有沙发、台灯、笔记本电脑、盆栽、火锅、帐篷等小道具。每位角色都有独立的动作节奏、性格与短句，例如 DeepSeek 爱拆解问题、Claude 爱细读润色、Gemini 爱把多种灵感拼在一起、Perplexity 随身找出处；这些是参考模型定位创作的人设，不是模型能力排名。对白是本地情景脚本，不调用各家模型 API；输入内容、历史对话和工具内容不传给剧场。
+每人 16 个原画姿势，共 272 张透明素材；运行时以约 30 FPS 插值并驱动头部、左右发梢、双臂、下摆与双足八处关节。关节通过连续网格变形连接，文心的轮椅下半部保持固定。实际帧率取决于终端图片传输和机器性能。场景包括散步、聊天、分饼干、纸团打闹、茶会、巡游、交头接耳和完成庆祝。另有击掌、合影与观星的小互动。人物可相互重叠、交叉走动；随机两位会靠近、倾身并轮流低声讨论。切换角色时，旧角色消散、新角色伴随传送环和粒子出现；每人至少四句入场白轮换，新角色显形后再开口，避免连续重复；输入和切场景会取消过时的招呼。轻柔模式减少这些动态效果。文心保持轮椅移动，RWKV 保留鸟翼和鸟足。新增沙发休憩、一起办公、围炉聚餐和露营野餐四类场景，配有沙发、台灯、笔记本电脑、盆栽、火锅、帐篷等小道具。道具切换采用 0.6 秒的低调交叉淡化，快速换场会从当前混合状态继续过渡。沙发、桌椅、电脑、盆栽、火锅和露营用品增加了厚度、透视、布纹和小配件；角色会先走近再坐下、读书、端杯、敲键盘、写字、浇花、搅锅、取餐或打开野餐篮。每位角色都有独立的动作节奏、性格与短句，例如 DeepSeek 爱拆解问题、Claude 爱细读润色、Gemini 爱把多种灵感拼在一起、Perplexity 随身找出处；这些是参考模型定位创作的人设，不是模型能力排名。对白是本地情景脚本，不调用各家模型 API；输入内容、历史对话和工具内容不传给剧场。
 
 ## 先看预览
 
@@ -69,11 +69,11 @@ python -m theater.cli instances
 python -m theater.cli --instance <实例ID> scene tea
 ```
 
-场景 ID 为 `roam`、`whisper`、`chat`、`cookie`、`paperball`、`tea`、`parade`、`celebrate`、`home`、`office`、`dinner`、`outing`。可用 `--socket <路径>` 显式指定控制端点。插件工具支持可选的 `instance_id`；不会按工作目录猜测目标窗口。实例登记只包含控制地址与进程/目录信息，不含输入、对话或工具内容。
+场景 ID 为 `roam`、`whisper`、`chat`、`cookie`、`paperball`、`tea`、`parade`、`celebrate`、`home`、`office`、`dinner`、`outing`、`highfive`、`photo`、`stargaze`。可用 `--socket <路径>` 显式指定控制端点。插件工具支持可选的 `instance_id`；不会按工作目录猜测目标窗口。实例登记只包含控制地址与进程/目录信息，不含输入、对话或工具内容。
 
 切换思考强度到 **max** 时，当前队伍会触发星环、轨迹与协作庆祝；切到 **ultra** 时，17 位角色分两排登场，伴随烟花、彩纸和光环。演出只在档位变化时播放一次，结束后恢复原队伍；启动时读取已有档位不会重复庆祝。输入时收敛效果，轻柔模式抑制华丽粒子；中途更换角色、人数或场景会结束演出并立即遵循新设置。
 
-CLI 原生的 **Alt+. / Alt+,** 可以升降常规强度；**ultra 需要在 `/model` 的强度选项中明确选择**。网页预览和上面的 `effort` 命令仅控制剧场演出，不修改 Codex 模型参数；真实 CLI 会自动跟随当前有效档位。本次增加了原生强度同步，已有用户需重建一次薄适配层，之后重启 `codex-theater`。
+CLI 原生的 **Alt+. / Alt+,** 可以升降常规强度；**ultra 需要在 `/model` 的强度选项中明确选择**。网页预览和上面的 `effort` 命令仅控制剧场演出，不修改 Codex 模型参数；真实 CLI 会自动跟随当前有效档位。从旧于 0.3.0 的版本升级时，需为原生强度同步重建一次薄适配层；已有 0.3.0 适配二进制可直接重启引擎使用后续道具与对白更新。
 
 ## 插件与适配边界
 
@@ -111,12 +111,13 @@ hooks 需在 `/hooks` 中单独查看并信任。未启用 hooks 时，自由活
 ```sh
 python -m unittest discover -s tests -v
 python scripts/doctor.py
+python scripts/export_showcase.py --props
 python scripts/verify_navigation.py --cwd /path/to/already-trusted-folder
 python scripts/verify_effort.py --cwd /path/to/already-trusted-folder
 python scripts/verify_native.py --cwd /path/to/already-trusted-folder
 python scripts/verify_native.py --cwd /path/to/already-trusted-folder --disconnect
 ```
 
-已通过 48 项行为、协议、动作网格、启动器和强度同步测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_effort.py` 通过真实快捷键和 `/model` 菜单验证 Max/Ultra 的单次演出、全员登场与恢复，同时检查总览导航。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
+已通过 76 项行为、协议、动作网格、道具过渡与接触、入场对白、启动器和强度同步测试。`verify_navigation.py` 使用实际启动器和默认共享后台，检查左箭头进入总览、返回聊天后恢复画面、缺少前台环境变量时的 MCP 控制与退出清理。`verify_effort.py` 通过真实快捷键和 `/model` 菜单验证 Max/Ultra 的单次演出、全员登场与恢复，同时检查总览导航。`verify_native.py` 另行覆盖内嵌模式的输入、菜单、缩放和引擎失联。检查均不提交模型请求。PTY 证明输出协议与生命周期行为，最终视觉效果仍以实际终端体验为准。
 
 当前只有 0.163.0 的迁移配置经过验证。Sixel、Windows、tmux 和 Zellij 尚未完成本项目的实际显示验证，可先使用网页预览。
