@@ -174,6 +174,8 @@ class Theater:
                          "Stop":"ready", "Interrupt":"idle", "SessionStart":"idle"}.get(event, message.get("phase"))
                 self.world.activity(phase, message.get("model"), message.get("typing",False),
                                     effort=message.get("effort"), cursor=cursor)
+            elif op == 'play':
+                self.world.play.start(self.world,message['kind'])
             elif op == "work":
                 self.world.work_event(message['kind'])
             elif op == "submit":

@@ -12,6 +12,7 @@ from .attention_render import accents
 from .brands import draw_brand_portal
 from .launch import draw_launch
 from .workshop import draw_jobs,draw_station
+from .play import draw_play
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
@@ -100,6 +101,7 @@ class Renderer:
                 actor_floor-=round(20*max(.65,min(1.8,actor_size/110))*engagement(contact['progress']))
             sprite = self.sprite(a, t, actor_size, still=actor_still)
             bob = 0 if state["reduced_motion"] or quiet else (math.sin(t*2.4+i) * .8)
+            if a.get('play') and not still:bob-=a['play']['bob']
             if a.get('gesture') == 'bounce' and not still:
                 bob -= max(0, math.sin(t*3.8*a.get('tempo',1)+i))*4*scale
             if state["scene"] in ("celebrate","power_max","power_ultra") and not still:
@@ -133,7 +135,7 @@ class Renderer:
             elif 'departure' in a:
                 continue
             partners=[p for p in state['cast'] if p['id'] in state.get('pair',[])]
-            if state['scene']=='whisper' and a['id'] in state.get('pair',[]) and len(partners)==2 and abs(partners[0]['x']-partners[1]['x'])<.14 and not quiet and not state['reduced_motion'] and not a.get('reaction') and not a.get('attention'):
+            if state['scene']=='whisper' and a['id'] in state.get('pair',[]) and len(partners)==2 and abs(partners[0]['x']-partners[1]['x'])<.14 and not quiet and not state['reduced_motion'] and not a.get('reaction') and not a.get('attention') and not a.get('play'):
                 partner=state['pair'].index(a['id'])
                 angle=(7 if partner==0 else -7)*(.65+.35*math.sin(t*3))
                 sprite=sprite.rotate(-angle,resample=Image.Resampling.BICUBIC,expand=True)
@@ -191,6 +193,7 @@ class Renderer:
                 draw.line((px-3,py,px+2,py-3,px+1,py+3),fill="#b5acc5")
         scene_details(canvas,state,floor,size)
         power_foreground(canvas,state)
+        draw_play(canvas,state,positions,self.font)
         draw_jobs(canvas,state,positions)
         draw_station(canvas,state,floor,self.font)
         draw_launch(canvas,state,floor,size,positions,self.font)

@@ -12,6 +12,7 @@ from .props import interaction_slots, POSITIONS
 from .scenery import SetTransition
 from .attention import Attention
 from .workshop import Workshop
+from .play import Play
 from .launch import destination, snapshot as flight_snapshot, DURATION as FLIGHT_DURATION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +48,7 @@ class Actor:
     reaction: dict | None = None
     attention: dict | None = None
     job: dict | None = None
+    play: dict | None = None
 
 class World:
     def __init__(self, seed=7, cast=None, density=4):
@@ -83,6 +85,7 @@ class World:
         self._interaction_plans = {}
         self._interaction_round = 0
         self._next_interaction = 0.0
+        self.play = Play()
         self.workshop = Workshop()
         self.attention = Attention()
         self._populate(self.pool[:self.density])
@@ -99,6 +102,7 @@ class World:
         if not math.isfinite(x) or not math.isfinite(y) or not (-2 <= x <= 3 and -2 <= y <= 3):
             raise ValueError('invalid pointer coordinates')
         self.attention.pointer(self, kind, x, y, button)
+        self.play.pointer(self,kind)
         return self.snapshot()
 
     def _set_environment(self, name):
@@ -145,7 +149,7 @@ class World:
 
     def _step_interactions(self):
         if (self.t < self.typing_until or self.reduced_motion or self.spectacle or self.flight
-                or any(a.reaction or a.attention for a in self.actors)
+                or any(a.reaction or a.attention or a.play for a in self.actors)
                 or self.phase in ('waiting','blocked')):
             self._clear_interactions()
             return
@@ -188,6 +192,7 @@ class World:
                      temperament=p["temperament"], tempo=p["tempo"], accent=p["accent"])
 
     def _populate(self, ids):
+        self.play.cancel(self)
         self.cancel_flight()
         self.attention.reset(self)
         old = {a.id: a for a in self.actors}
@@ -332,6 +337,7 @@ class World:
         self._set_environment('none')
         self.flight = {'start':self.t, 'model':self.model, 'destination':destination(self.model)}
         self.workshop.submit(self)
+        self.play.cancel(self);self.play.finish_pending=False
         return self.snapshot()
 
     def activity(self, phase=None, model=None, typing=False, effort=None, cursor=None):
@@ -340,6 +346,7 @@ class World:
         if model is not None:
             self.model = model
         if typing:
+            self.play.cancel(self)
             self.cancel_flight()
             if cursor is not None:
                 if not isinstance(cursor, dict) or set(cursor) != {'x', 'y'}:
@@ -356,6 +363,7 @@ class World:
         if phase and phase != self.phase:
             previous = self.phase
             self.phase = phase
+            if phase in ('waiting','blocked'):self.play.cancel(self)
             if previous=='working' and phase in ('idle','ready'):self.workshop.event(self,'complete')
             if self.spectacle:
                 return
@@ -385,6 +393,9 @@ class World:
 
     def work_event(self, kind):
         self.workshop.event(self,kind)
+        if kind=='complete':self.play.finish_pending=True
+        elif kind in ('failed','interrupted'):
+            self.play.cancel(self);self.play.finish_pending=False
         return self.snapshot()
 
     def _line(self, identifier, context):
@@ -409,6 +420,7 @@ class World:
             raise ValueError("unknown scene")
         self.cancel_spectacle()
         self.cancel_flight()
+        self.play.cancel(self)
         self.scene, self.scene_start = name, self.t
         self._set_environment(ENVIRONMENTS.get(name, "none"))
         self._clear_entrances()
@@ -474,7 +486,7 @@ class World:
         if self.spectacle and self.t-self.spectacle["start"] >= self.spectacle["duration"]:
             self.cancel_spectacle()
         quiet = self.t < self.typing_until
-        social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None and self.flight is None
+        social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None and self.flight is None and self.play.active is None
         age = self.t-self.scene_start
         if social and self.scene != "roam" and self.t >= self.scene_end:
             self.scene, self.pair = "roam", []
@@ -501,6 +513,7 @@ class World:
                 a.target = .5+.29*math.sin(age*.65+i*1.5)
         self.attention.step(self, dt)
         self.workshop.step(self)
+        self.play.step(self)
         self._step_interactions()
         for i, a in enumerate(self.actors):
             launching = self.flight is not None
@@ -513,7 +526,7 @@ class World:
             if observing:
                 ramp = max(0, min(1, (a.attention['age']-a.attention['delay'])/.5))
                 ramp = ramp*ramp*(3-2*ramp)
-            speed = (.43*a.attention['pace']*ramp if observing else .3 if launching else .14)*a.tempo
+            speed = (.43*a.attention['pace']*ramp if observing else .3 if launching or (a.play and a.play['kind']=='tease') else .14)*a.tempo
             desired = max(-speed, min(speed, (a.target-a.x)*(4 if observing else 1.8)))
             if (quiet and not observing) or self.reduced_motion or airborne or 0 <= self.t-a.arrival < 1.2:
                 desired = 0
@@ -532,6 +545,10 @@ class World:
                 a.facing = self.attention.gaze_direction(self, a)
                 a.pose = 'rest' if a.attention['style'] == 'crouch' else 'idle'
                 a.gesture = 'look_up' if a.attention['look_up'] else 'observe_' + a.attention['style']
+            elif a.play:
+                a.job=None
+                a.pose='rest' if a.play['gesture']=='rest' else 'wave' if a.play['kind']=='finish' else 'idle'
+                a.gesture=a.play['gesture']
             elif a.job:
                 a.pose='rest' if a.job['kind']=='read' else 'idle'
                 a.gesture={'read':'read','search':'peek','command':'type','edit':'write','tool':'type'}.get(a.job['kind'],'think')
@@ -576,7 +593,7 @@ class World:
                 a.pose, a.gesture = "talk", PERSONALITIES[a.id]["gesture"]
             else:
                 a.pose, a.gesture = "idle", PERSONALITIES[a.id]["gesture"]
-            if social and self.scene == "whisper" and a.id in self.pair and abs(a.x-a.target) < .025 and not self.reduced_motion and not reacting and not observing:
+            if social and self.scene == "whisper" and a.id in self.pair and abs(a.x-a.target) < .025 and not self.reduced_motion and not reacting and not observing and not a.play:
                 a.pose = "talk" if int(age*1.4) % 2 == self.pair.index(a.id) else "idle"
                 a.gesture = "nod" if a.pose == "talk" else "think"
                 a.facing = 1 if a.id == self.pair[0] else -1
@@ -596,4 +613,4 @@ class World:
                 "departing": [dict(a) for a in self.departing], "pair": self.pair[:],
                 "pointer": self.attention.snapshot(),
                 "flight": flight_snapshot(self.flight,self.t,self.reduced_motion),
-                "station": self.workshop.snapshot(self), "work_kind":self.workshop.kind}
+                "station": self.workshop.snapshot(self), "work_kind":self.workshop.kind, "play":self.play.snapshot(self)}
