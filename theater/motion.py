@@ -7,6 +7,7 @@ import json
 import math
 from pathlib import Path
 from PIL import Image
+from .cache import LRU
 
 PROFILES = json.loads((Path(__file__).resolve().parents[1] / 'config/rigs.json').read_text())
 
@@ -99,7 +100,7 @@ def joint_motion(actor, t):
 class PuppetRig:
     """An eight-joint soft rig evaluated at elapsed time, independent of FPS."""
     def __init__(self):
-        self.grids={}
+        self.grids=LRU(48)
 
     def animate(self, sprite, actor, t, still=False):
         if still:

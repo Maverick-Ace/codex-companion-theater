@@ -36,6 +36,7 @@ class Play:
         theme=world.rng.choice(('stamp','photo','confetti','highfive')) if kind=='finish' else world.rng.choice(('book','chair','paperball')) if kind=='prank' else 'notes'
         if 'wenxin' in selected and theme=='chair':theme='paperball'
         self.active={'kind':kind,'theme':theme,'actors':selected,'start':world.t,
+                     'center':max(.22,min(.78,sum(a.x for a in actors)/len(actors)+world.rng.uniform(-.1,.1))),
                      'duration':4.2 if kind=='finish' else 3.2 if kind=='tease' else 6.,'spoken':-1}
         world._clear_interactions();world._clear_entrances();world.dialogue=[]
         self.next_social=world.t+world.rng.uniform(24,42)
@@ -80,9 +81,10 @@ class Play:
         size,_=stage_metrics(len(world.actors),world.attention.width,world.attention.height)
         for index,a in enumerate(actors):
             if a.reaction or a.attention:continue
-            target=.43+(index-.5)*.14 if event['kind'] in ('duo','prank') else .25+index*.16
+            center=event['center']
+            target=center+(index-.5)*.14 if event['kind'] in ('duo','prank') else center+(index-(len(actors)-1)/2)*.16
             if event['kind']=='finish' and event['theme']=='highfive':
-                target=.45+(index-.5)*.075 if index<2 else .65+(index-2)*.12
+                target=center+(index-.5)*.075 if index<2 else center+.20+(index-2)*.12
             gesture='nod' if index%2 else 'think'
             if event['kind']=='tease':
                 point=world.attention.point
@@ -92,6 +94,7 @@ class Play:
             elif event['kind']=='finish':gesture='clap' if event['theme']!='photo' else 'peek'
             elif event['kind']=='prank':gesture='peek' if age>3 else 'reach'
             a.job=None
+            a.depth_target=actors[0].depth
             a.target=max(.07,min(.93,target))
             a.play={'kind':event['kind'],'theme':event['theme'],'gesture':gesture,'age':age,'role':index,
                     'bob':0 if a.id=='wenxin' else max(0,math.sin(age*5+index))*3 if event['kind']=='tease' else 0}

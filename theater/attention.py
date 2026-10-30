@@ -42,7 +42,7 @@ class Attention:
     def _layout(self, world):
         ensemble = bool(world.spectacle and world.spectacle['kind'] == 'ultra')
         size, floor = stage_metrics(len(world.actors), self.width, self.height, self.labels, ensemble)
-        return [(a, *stage_position({'x': a.x}, i, len(world.actors), self.width, size, floor, ensemble))
+        return [(a, *stage_position({'x': a.x,'depth':a.depth}, i, len(world.actors), self.width, size, floor, ensemble))
                 for i, a in enumerate(world.actors)]
 
     def reset(self, world):

@@ -1,6 +1,6 @@
 [project]
 name = "codex-companion-theater"
-version = "0.10.0"
+version = "0.11.0"
 description = "Local animated companions with a small, versioned Codex display bridge"
 requires-python = ">=3.12"
 dependencies = ["Pillow>=9"]

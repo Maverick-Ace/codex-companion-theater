@@ -14,7 +14,9 @@ def stage_position(actor, index, count, width, size, floor, ensemble=False):
         row, column = (0, index) if index < 8 else (1, index - 8)
         row_count = 8 if row == 0 else 9
         return int((column + 1) * width / (row_count + 1)), floor - int(size * .58) if row == 0 else floor, int(size * .9) if row == 0 else size
-    return int(actor['x'] * (width - size) + size / 2), floor, size
+    depth=max(0,min(1,actor.get('depth',0)))
+    room=max(0,floor-size-max(6,round(size*.08)))
+    return int(actor['x'] * (width - size) + size / 2), floor-round(depth*min(size*.14,room)), size
 
 
 def stage_x(pixel_x, width, size):

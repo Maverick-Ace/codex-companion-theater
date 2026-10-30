@@ -7,6 +7,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from PIL import Image
 from theater.world import World, CAST, SCENES
 from theater.service import Theater, UnixServer, request
@@ -86,8 +87,12 @@ class RenderAndProtocolTests(unittest.TestCase):
 
     def test_ring_is_bounded(self):
         with tempfile.TemporaryDirectory() as temp:
-            t=Theater(temp)
-            for _ in range(70):t.command({'op':'layout','layout_key':'same','width_px':400,'height_px':80})
+            clock=[100.]
+            with patch('theater.service.time.monotonic',side_effect=lambda:clock[0]):
+                t=Theater(temp)
+                for _ in range(70):
+                    clock[0]+=.1
+                    t.command({'op':'layout','layout_key':'same','width_px':400,'height_px':80})
             self.assertEqual(len(list(Path(temp).glob('frame-*.png'))),64)
 
     def test_mcp_initialization_and_catalog(self):

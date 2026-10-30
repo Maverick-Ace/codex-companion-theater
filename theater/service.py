@@ -1,5 +1,4 @@
 """One local world per launcher, with Unix JSON v1 and optional loopback preview."""
-import io
 import json
 import math
 import os
@@ -13,6 +12,7 @@ from urllib.parse import urlparse, parse_qs
 from .world import World, CAST, NAMES, SCENES, PERSONALITIES
 from .render import Renderer, ROOT
 from .life import CollectionStore
+from .frames import Frames
 
 MAX_MESSAGE = 65536
 
@@ -93,6 +93,8 @@ class Theater:
         self.world.life.owned,self.world.life.selected=self.collection.load()
         self._collection_state=(tuple(sorted(self.world.life.owned)),self.world.life.selected)
         self.renderer = Renderer()
+        self.frames=Frames(self.renderer)
+        self.published={}
         self.lock = threading.RLock()
         self.last = time.monotonic()
         self.frame_id = 0
@@ -159,19 +161,18 @@ class Theater:
                 for event in events:
                     self.world.pointer(**event)
                 self.save_collection()
-                image = self.renderer.frame(self.world.snapshot(), width, height)
+                packet=self.frames.get(self.world.snapshot(),width,height,False,time.monotonic())
                 # A bounded ring. Atomic rename prevents the CLI reading an incomplete PNG.
-                self.frame_id += 1
-                path = self.runtime / f"frame-{self.frame_id % 64:02}.png"
-                sixel=self.runtime/"sixel"
-                if sixel.exists():
-                    for cached in sixel_cache_entries(sixel,path.stem):
-                        cached.unlink(missing_ok=True)
-                temp = path.with_suffix(".new")
-                image.save(temp, format="PNG", compress_level=2)
-                os.replace(temp, path)
+                self.frame_id=self.frames.serial
+                slot=packet.serial%64;path=self.runtime/f'frame-{slot:02}.png'
+                if self.published.get(slot)!=packet.serial or not path.exists():
+                    sixel=self.runtime/'sixel'
+                    if sixel.exists():
+                        for cached in sixel_cache_entries(sixel,path.stem):cached.unlink(missing_ok=True)
+                    temp=path.with_suffix('.new');temp.write_bytes(packet.png);os.replace(temp,path)
+                    self.published[slot]=packet.serial
                 self.last_geometry = {k:message[k] for k in ("layout_key","width_px","height_px")}
-                return {"v":1,"visible":True,"layout_key":key,"frame":str(path),"frame_id":self.frame_id}
+                return {"v":1,"visible":True,"layout_key":key,"frame":str(path),"frame_id":packet.serial}
             if op == "cast":
                 self.world.set_cast(message["ids"])
             elif op == "scene":
@@ -278,9 +279,8 @@ def make_http(theater, port):
                     theater.advance()
                     labels = args.get("labels", ["0"])[0] == "1"
                     theater.world.set_geometry(w,h,labels=labels)
-                    im = theater.renderer.frame(theater.world.snapshot(),w,h,labels=labels)
-                    data=io.BytesIO();im.save(data,format="PNG",compress_level=1)
-                self.send(data.getvalue(),"image/png")
+                    packet=theater.frames.get(theater.world.snapshot(),w,h,labels,time.monotonic())
+                self.send(packet.png,"image/png")
             elif parsed.path.startswith("/portrait/"):
                 name = parsed.path.rsplit("/",1)[1]
                 if name not in CAST:

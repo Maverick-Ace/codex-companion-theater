@@ -76,6 +76,9 @@ class MotionTests(unittest.TestCase):
     def test_drag_above_stage_preserves_rotated_head_and_feet(self):
         renderer=Renderer();world=World(seed=3,cast=['gpt'],density=1)
         world.set_geometry(960,180);world.next_scene=world.next_roam=100
+        world.actors[0].x=world.actors[0].target=.5
+        world.actors[0].depth=world.actors[0].depth_target=0
+        world.rng.seed(3)
         world.pointer('move',.5,(178-129*1.05)/180)
         for _ in range(15):world.tick(1/60)
         self.assertEqual(world.snapshot()['pointer']['caught'],'gpt')

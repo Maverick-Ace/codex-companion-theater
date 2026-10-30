@@ -14,6 +14,7 @@ from .attention import Attention
 from .workshop import Workshop
 from .play import Play
 from .life import Life
+from .roaming import Roaming,spread
 from .launch import destination, snapshot as flight_snapshot, DURATION as FLIGHT_DURATION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +51,9 @@ class Actor:
     attention: dict | None = None
     job: dict | None = None
     play: dict | None = None
+    depth: float = 0.0
+    depth_target: float = 0.0
+    depth_v: float = 0.0
 
 class World:
     def __init__(self, seed=7, cast=None, density=4):
@@ -87,6 +91,7 @@ class World:
         self._interaction_round = 0
         self._next_interaction = 0.0
         self.life = Life()
+        self.roaming = Roaming()
         self.play = Play()
         self.workshop = Workshop()
         self.attention = Attention()
@@ -148,6 +153,7 @@ class World:
         for a, slot in zip(actors, slots):
             self._interaction_plans[a.id] = dict(slot, started=None, duration=self.rng.uniform(3.0, 4.3))
             a.target = slot['x']
+            a.depth_target = 0
             a.interaction = {"prop":slot['prop'], "action":slot['action'],
                              "active":False, "progress":0.0}
 
@@ -163,7 +169,7 @@ class World:
             plan = self._interaction_plans.get(a.id)
             if plan is None:
                 continue
-            arrived = abs(a.x-plan['x']) < .025 and abs(a.v) < .006 and self.t-a.arrival >= 1.2
+            arrived = abs(a.x-plan['x']) < .025 and abs(a.v) < .006 and a.depth<.06 and abs(a.depth_v)<.03 and self.t-a.arrival >= 1.2
             if not arrived:
                 a.interaction = {"prop":plan['prop'], "action":plan['action'],
                                  "active":False, "progress":0.0}
@@ -192,7 +198,8 @@ class World:
 
     def _new_actor(self, identifier, x, arrival):
         p = PERSONALITIES[identifier]
-        return Actor(identifier, x, x, arrival=arrival, gesture=p["gesture"],
+        depth=self.rng.uniform(0,.8)
+        return Actor(identifier, x, x, arrival=arrival, depth=depth,depth_target=depth,gesture=p["gesture"],
                      temperament=p["temperament"], tempo=p["tempo"], accent=p["accent"])
 
     def _populate(self, ids):
@@ -205,8 +212,10 @@ class World:
         self.departing = [d for d in self.departing if d["id"] not in ids]
         self.departing.extend(dict(asdict(a), departure=self.t) for a in self.actors if a.id not in ids)
         n = len(ids)
-        self.actors = [old[k] if k in old else self._new_actor(k, (i+1)/(n+1), self.t if old else -10.0)
-                       for i, k in enumerate(ids)]
+        places=spread(self.rng,n)
+        self.actors = [old[k] if k in old else self._new_actor(k, places[i], self.t if old else -10.0)
+                       for i,k in enumerate(ids)]
+        self.roaming.retain(self)
         self.pair = []
         self.dialogue = []
         self.generation += 1
@@ -258,6 +267,7 @@ class World:
             "next_visit": max(0, self.next_visit-self.t),
             "next_roam": max(0, self.next_roam-self.t),
             "pair": self.pair[:], "phase": self.phase,
+            "roam_paused_at":self.t,
         }
         self.spectacle = {"kind": effort, "start": self.t, "duration": 8.0 if effort == "max" else 10.0}
         self.scene = "power_"+effort
@@ -292,6 +302,9 @@ class World:
             ids = [a.id for a in saved["actors"]]
             self.departing = [dict(asdict(a), departure=self.t) for a in self.actors if a.id not in ids]
             self.actors = saved["actors"]
+            paused=self.t-saved['roam_paused_at']
+            for plan in self.roaming.plans.values():plan['next']+=paused
+            self.roaming.retain(self)
             self.scene = saved["scene"]
             self._set_environment(saved["environment"])
             self.scene_start = self.t-saved["scene_age"]
@@ -383,8 +396,8 @@ class World:
                 self.scene, self.scene_start = "work", self.t
                 self._set_environment("office")
                 self.pair = []
+                self.roaming.scatter(self,self.actors)
                 for i, a in enumerate(self.actors):
-                    a.target = .14+i*.20
                     a.bubble = ""
                 self.say(0, self._line(self.actors[0].id, "work"), 3.2)
             elif phase in ("waiting", "blocked"):
@@ -393,6 +406,7 @@ class World:
                 self.pair = []
                 for a in self.actors:
                     a.target = a.x
+                    a.depth_target = a.depth
                 self.say(0, self._line(self.actors[0].id, "waiting"), 4)
             elif previous == "working" and phase in ("idle", "ready"):
                 self.start_scene("celebrate")
@@ -433,6 +447,8 @@ class World:
         self._clear_interactions()
         self.pair = []
         self.dialogue = []
+        self.roaming.scatter(self,self.actors)
+        center=self.rng.uniform(.28,.72)
         duration = 14 if name in ("home", "office", "dinner", "outing", "stargaze") else 12 if name in ("cookie", "paperball", "parade", "whisper") else 9
         self.scene_end = self.t+duration
         self.next_scene = self.scene_end+self.rng.uniform(4, 8)
@@ -440,15 +456,9 @@ class World:
             a.bubble = ""
             a.gesture = PERSONALITIES[a.id]["gesture"]
             if name in ("chat", "tea", "celebrate", "highfive"):
-                a.target = .36+i*.16 if i < 2 else (.12 if i == 2 else .88)
-            elif name in ("cookie", "paperball"):
-                a.target = .30+i*.19
-            elif name == "parade":
-                a.target = .14+i*.17
-            elif name in ("home", "dinner", "office"):
-                a.target = .22+.56*i/max(1, len(self.actors)-1)
-            elif name in ("outing", "stargaze", "photo"):
-                a.target = .24+.52*i/max(1, len(self.actors)-1)
+                if i<2:a.target=center+(i-.5)*self.rng.uniform(.10,.17)
+            elif name in ('photo','parade'):
+                a.target=max(.07,min(.93,center+(i-(len(self.actors)-1)/2)*self.rng.uniform(.12,.17)))
         partners = self.actors[:2]
         if name == "whisper" and len(self.actors) > 1:
             partners = sorted(self.rng.sample(self.actors, 2), key=lambda a: a.x)
@@ -456,6 +466,7 @@ class World:
             center = max(.2, min(.8, sum(a.x for a in partners)/2))
             for i, a in enumerate(partners):
                 a.target = center+(i-.5)*.075
+                a.depth_target = partners[0].depth
         if name in SCENES and partners:
             delay = 2.8 if name == "whisper" else 0
             for i, a in enumerate(partners):
@@ -506,10 +517,8 @@ class World:
             self._speak_entrances()
         if social and not self.reduced_motion and not self.entrances:
             self._speak_due()
-        if social and self.scene == "roam" and self.t >= self.next_roam:
-            self.next_roam = self.t+self.rng.uniform(3, 6)
-            a = self.rng.choice(self.actors)
-            a.target = self.rng.uniform(.09, .91)
+        if (social and self.scene=='roam') or (self.phase=='working' and not quiet and not self.flight and not self.spectacle):
+            self.roaming.step(self)
         if social and self.t >= self.next_visit and len(self.pool) > len(self.actors):
             self.next_visit = self.t+55
             incoming = self.pool.pop(0)
@@ -526,11 +535,13 @@ class World:
             launching = self.flight is not None
             if launching:
                 a.target = .23 + i*.095 if i<3 else .72+(i-3)*.12
+                a.depth_target=0
             observing = a.attention is not None
             reacting = a.reaction is not None
             airborne = reacting and a.reaction['kind'] in ('jump', 'caught', 'land')
             ramp = 1.0
             if observing:
+                a.depth_target=0
                 ramp = max(0, min(1, (a.attention['age']-a.attention['delay'])/.5))
                 ramp = ramp*ramp*(3-2*ramp)
             speed = (.43*a.attention['pace']*ramp if observing else .3 if launching or (a.play and a.play['kind']=='tease') else .14)*a.tempo
@@ -539,7 +550,11 @@ class World:
                 desired = 0
             a.v += (desired-a.v)*(1-math.exp(-dt*(7 if observing else 9)))
             a.x = max(.07, min(.93, a.x+a.v*dt))
-            a.travel += abs(a.v)*dt
+            dz=max(-.55,min(.55,(a.depth_target-a.depth)*3))
+            if (quiet and not observing) or self.reduced_motion or self.life.sleeping or airborne:dz=0
+            a.depth_v+=(dz-a.depth_v)*(1-math.exp(-dt*7))
+            a.depth=max(0,min(1,a.depth+a.depth_v*dt))
+            a.travel += (abs(a.v)+abs(a.depth_v)*.14)*dt
             if self.life.sleeping:
                 a.pose, a.gesture = "rest", "rest"
                 a.bubble=""
@@ -547,8 +562,8 @@ class World:
                 a.pose, a.gesture = "idle", "rest"
             elif airborne:
                 a.pose, a.gesture = 'wave', 'hang' if a.reaction['kind'] == 'caught' else 'catch'
-            elif abs(a.v) > .008:
-                a.facing = 1 if a.v > 0 else -1
+            elif abs(a.v) > .008 or abs(a.depth_v)>.015:
+                if abs(a.v)>.008:a.facing = 1 if a.v > 0 else -1
                 a.pose = "walk_right" if a.facing == 1 else "walk_left"
                 a.gesture = "run" if observing else "walk"
             elif observing:

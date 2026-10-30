@@ -16,6 +16,9 @@ def single(seed=3, actor='gpt'):
     world = World(seed=seed, cast=[actor], density=1)
     world.set_geometry(960, 180)
     world.next_scene = world.next_roam = 100
+    world.actors[0].x=world.actors[0].target=.5
+    world.actors[0].depth=world.actors[0].depth_target=0
+    world.rng.seed(seed)
     return world
 
 

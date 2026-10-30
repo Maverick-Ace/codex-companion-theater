@@ -1,0 +1,198 @@
+{
+  "baseline_source_commit": "2e6e6273f5cdd87fad4be3fe0358f0ce75596c64",
+  "updated_version": "0.11.0",
+  "python": "3.12.3",
+  "pillow": "10.2.0",
+  "method": "Paired baseline/current runs on the first allowed CPU core, identical seeded actor positions, 120 requests after 6 warmup requests, simulated 30 Hz clock. Resize workload varies height. CPU values are process time per request, RSS is peak resident memory per fresh child process.",
+  "benchmark_cpu": 0,
+  "viewport": [
+    1040,
+    180
+  ],
+  "cases": [
+    {
+      "case": "idle",
+      "before": {
+        "case": "idle",
+        "requests": 120,
+        "cpu_ms_per_request": 12.471,
+        "peak_rss_mib": 38.9,
+        "new_frames": 120,
+        "png_mib": 13.899,
+        "source_cache_entries": 4,
+        "mesh_cache_entries": 4
+      },
+      "after": {
+        "case": "idle",
+        "requests": 120,
+        "cpu_ms_per_request": 5.774,
+        "peak_rss_mib": 42.4,
+        "new_frames": 60,
+        "png_mib": 6.37,
+        "source_cache_entries": 4,
+        "mesh_cache_entries": 4
+      }
+    },
+    {
+      "case": "walk",
+      "before": {
+        "case": "walk",
+        "requests": 120,
+        "cpu_ms_per_request": 14.016,
+        "peak_rss_mib": 39.8,
+        "new_frames": 120,
+        "png_mib": 13.095,
+        "source_cache_entries": 18,
+        "mesh_cache_entries": 4
+      },
+      "after": {
+        "case": "walk",
+        "requests": 120,
+        "cpu_ms_per_request": 12.949,
+        "peak_rss_mib": 45.2,
+        "new_frames": 120,
+        "png_mib": 11.935,
+        "source_cache_entries": 18,
+        "mesh_cache_entries": 4
+      }
+    },
+    {
+      "case": "working",
+      "before": {
+        "case": "working",
+        "requests": 120,
+        "cpu_ms_per_request": 15.839,
+        "peak_rss_mib": 46.6,
+        "new_frames": 120,
+        "png_mib": 13.28,
+        "source_cache_entries": 16,
+        "mesh_cache_entries": 4
+      },
+      "after": {
+        "case": "working",
+        "requests": 120,
+        "cpu_ms_per_request": 15.255,
+        "peak_rss_mib": 50.3,
+        "new_frames": 120,
+        "png_mib": 12.199,
+        "source_cache_entries": 16,
+        "mesh_cache_entries": 4
+      }
+    },
+    {
+      "case": "typing",
+      "before": {
+        "case": "typing",
+        "requests": 120,
+        "cpu_ms_per_request": 14.985,
+        "peak_rss_mib": 41.4,
+        "new_frames": 120,
+        "png_mib": 13.389,
+        "source_cache_entries": 31,
+        "mesh_cache_entries": 4
+      },
+      "after": {
+        "case": "typing",
+        "requests": 120,
+        "cpu_ms_per_request": 13.826,
+        "peak_rss_mib": 46.7,
+        "new_frames": 120,
+        "png_mib": 12.269,
+        "source_cache_entries": 31,
+        "mesh_cache_entries": 4
+      }
+    },
+    {
+      "case": "orbit",
+      "before": {
+        "case": "orbit",
+        "requests": 120,
+        "cpu_ms_per_request": 19.706,
+        "peak_rss_mib": 46.0,
+        "new_frames": 120,
+        "png_mib": 16.438,
+        "source_cache_entries": 20,
+        "mesh_cache_entries": 4
+      },
+      "after": {
+        "case": "orbit",
+        "requests": 120,
+        "cpu_ms_per_request": 18.393,
+        "peak_rss_mib": 51.5,
+        "new_frames": 120,
+        "png_mib": 15.047,
+        "source_cache_entries": 20,
+        "mesh_cache_entries": 4
+      }
+    },
+    {
+      "case": "paused",
+      "before": {
+        "case": "paused",
+        "requests": 120,
+        "cpu_ms_per_request": 13.733,
+        "peak_rss_mib": 38.9,
+        "new_frames": 120,
+        "png_mib": 13.94,
+        "source_cache_entries": 4,
+        "mesh_cache_entries": 4
+      },
+      "after": {
+        "case": "paused",
+        "requests": 120,
+        "cpu_ms_per_request": 0.052,
+        "peak_rss_mib": 41.3,
+        "new_frames": 1,
+        "png_mib": 0.106,
+        "source_cache_entries": 4,
+        "mesh_cache_entries": 4
+      }
+    },
+    {
+      "case": "reduced",
+      "before": {
+        "case": "reduced",
+        "requests": 120,
+        "cpu_ms_per_request": 6.846,
+        "peak_rss_mib": 39.0,
+        "new_frames": 120,
+        "png_mib": 13.962,
+        "source_cache_entries": 4,
+        "mesh_cache_entries": 0
+      },
+      "after": {
+        "case": "reduced",
+        "requests": 120,
+        "cpu_ms_per_request": 0.275,
+        "peak_rss_mib": 41.7,
+        "new_frames": 1,
+        "png_mib": 0.107,
+        "source_cache_entries": 4,
+        "mesh_cache_entries": 0
+      }
+    },
+    {
+      "case": "resize",
+      "before": {
+        "case": "resize",
+        "requests": 120,
+        "cpu_ms_per_request": 26.123,
+        "peak_rss_mib": 125.3,
+        "new_frames": 120,
+        "png_mib": 9.363,
+        "source_cache_entries": 352,
+        "mesh_cache_entries": 352
+      },
+      "after": {
+        "case": "resize",
+        "requests": 120,
+        "cpu_ms_per_request": 16.344,
+        "peak_rss_mib": 64.3,
+        "new_frames": 120,
+        "png_mib": 8.552,
+        "source_cache_entries": 128,
+        "mesh_cache_entries": 48
+      }
+    }
+  ]
+}

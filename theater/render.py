@@ -14,6 +14,7 @@ from .launch import draw_launch
 from .workshop import draw_jobs,draw_station
 from .play import draw_play
 from .life import draw_decorations,draw_life
+from .cache import LRU,image_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
@@ -30,8 +31,9 @@ def composite_clipped(canvas, sprite, x, y):
 class Renderer:
     def __init__(self, assets=None):
         self.assets = Path(assets or ROOT / "assets/cast")
-        self.cache = {}
-        self.fonts = {}
+        self.cache = LRU(128,12*1024*1024,image_bytes)
+        self.originals = LRU(8,4*1024*1024,image_bytes)
+        self.fonts = LRU(32)
         self.rig = PuppetRig()
 
     def font(self, size):
@@ -45,8 +47,12 @@ class Renderer:
             path = self.assets / actor_id / "frames" / f"{index:02}.png"
             if not path.exists():
                 raise FileNotFoundError(f"missing production sprite: {path}")
-            with Image.open(path) as source:
-                im = source.convert("RGBA")
+            original=(actor_id,index)
+            if original in self.originals:base=self.originals[original]
+            else:
+                with Image.open(path) as source:base=source.convert('RGBA')
+                self.originals[original]=base
+            im=base.copy()
             im.thumbnail((height * 2, height), Image.Resampling.LANCZOS)
             self.cache[key] = im
         return self.cache[key]
@@ -94,8 +100,10 @@ class Renderer:
         positions=[placement(a,i) for i,a in enumerate(state['cast'])]
         power_backdrop(canvas,state,floor,size,positions)
         actors=([] if ensemble else state.get('departing',[]))+state['cast']
-        for i, a in enumerate(actors):
-            index=next((j for j,item in enumerate(state['cast']) if item['id']==a['id']),0)
+        indices={a['id']:i for i,a in enumerate(state['cast'])}
+        actors=sorted(actors,key=lambda a:placement(a,indices.get(a['id'],0))[1])
+        for a in actors:
+            index=indices.get(a['id'],0);i=index
             x, actor_floor, actor_size = placement(a,index)
             actor_still = state['reduced_motion'] or (quiet and not a.get('attention'))
             contact=a.get('interaction')
