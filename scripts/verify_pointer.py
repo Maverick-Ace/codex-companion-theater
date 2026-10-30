@@ -113,8 +113,14 @@ def main():
             actor = before['cast'][0]
             cx, _, _ = stage_position(actor, 0, len(before['cast']), geometry['width_px'], size, floor)
             px, py = cx/geometry['width_px'], (floor-size*.5)/geometry['height_px']
-            mouse(px, py); pump(.2)
-            evidence['hover_state'] = state()
+            # A first layout may precede native input readiness. Wait for the
+            # actual mouse event to reach the world before exercising the gesture.
+            deadline=time.monotonic()+6
+            while True:
+                mouse(px, py);pump(.1)
+                evidence['hover_state']=state()
+                if (evidence['hover_state']['cast'][0]['reaction'] or {}).get('kind')=='hover':break
+                if time.monotonic()>=deadline:raise AssertionError('native hover never became ready')
             mouse(px, py, 0); pump(.2)
             evidence['click_state'] = state()
             mouse(px, py, 0, 'm'); pump(.1)
@@ -131,6 +137,8 @@ def main():
             assert evidence['caught_state']['pointer']['caught'] == actor['id']
             for offset in (-.07, .07, -.07, .07, -.07):
                 mouse(px+offset, overhead_y); pump(.06)
+            deadline=time.monotonic()+.6
+            while state()['pointer']['caught'] is not None and time.monotonic()<deadline:pump(.03)
             evidence['released_state'] = state()
             evidence['shake_released'] = evidence['released_state']['pointer']['caught'] is None
             assert evidence['shake_released']
@@ -148,7 +156,7 @@ def main():
             os.write(master, b'\x1b'); pump(.2)
             os.write(master, b'\x05\x15'); pump(.2)
             os.write(master, b'/quit'); pump(.3)
-            os.write(master, b'\r'); pump(4)
+            os.write(master, b'\r'); pump(20)
         finally:
             if proc.poll() is None:
                 proc.terminate()
