@@ -69,8 +69,15 @@ mod pointer_state {
 // End pointer_state.
 use pointer_state::{PointerEvent, PointerInput};
 
-struct Reply { value: Value, received: Instant }
+struct Reply { value: Value }
+struct Request { epoch: u64, value: Value }
+pub(crate) enum Frame { Draw(crate::pets::AmbientPetDraw), Hold, Clear }
 struct Bridge {
+    epoch: u64,
+    hidden: bool,
+    hidden_sent: bool,
+    last_request: Option<Instant>,
+    presented: Option<(u64, String)>,
     submission_id: u64,
     submission: Option<(String, Instant)>,
     activity_id: u64,
@@ -82,8 +89,8 @@ struct Bridge {
     last_input: Option<Instant>,
     effort: Option<String>,
     effort_baseline: bool,
-    tx: mpsc::SyncSender<Value>,
-    rx: mpsc::Receiver<Option<Value>>,
+    tx: mpsc::SyncSender<Request>,
+    rx: mpsc::Receiver<(u64, Option<Value>)>,
     latest: Option<Reply>,
 }
 static BRIDGE: OnceLock<Option<Mutex<Bridge>>> = OnceLock::new();
@@ -91,15 +98,15 @@ static BRIDGE: OnceLock<Option<Mutex<Bridge>>> = OnceLock::new();
 fn bridge() -> Option<&'static Mutex<Bridge>> {
     BRIDGE.get_or_init(|| {
         let path = std::env::var_os("CODEX_THEATER_SOCKET")?;
-        let (tx, requests) = mpsc::sync_channel::<Value>(1);
-        let (responses, rx) = mpsc::sync_channel::<Option<Value>>(2);
+        let (tx, requests) = mpsc::sync_channel::<Request>(1);
+        let (responses, rx) = mpsc::sync_channel::<(u64, Option<Value>)>(2);
         std::thread::Builder::new().name("companion-ipc".into()).spawn(move || {
             for message in requests {
-                let reply = exchange(&path, &message);
-                let _ = responses.try_send(reply);
+                let reply = exchange(&path, &message.value);
+                let _ = responses.try_send((message.epoch, reply));
             }
         }).ok()?;
-        Some(Mutex::new(Bridge { activity_id: 0, activity: "idle", submission_id: 0, submission: None, composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
+        Some(Mutex::new(Bridge { epoch: 0, hidden: true, hidden_sent: false, last_request: None, presented: None, activity_id: 0, activity: "idle", submission_id: 0, submission: None, composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
     }).as_ref()
 }
 
@@ -107,7 +114,8 @@ fn bridge() -> Option<&'static Mutex<Bridge>> {
 fn exchange(path: &std::ffi::OsStr, message: &Value) -> Option<Value> {
     use std::os::unix::net::UnixStream;
     let mut stream = UnixStream::connect(path).ok()?;
-    stream.set_read_timeout(Some(Duration::from_millis(250))).ok()?;
+    // This is the worker, not the input/UI thread. Cold sprites may take longer.
+    stream.set_read_timeout(Some(Duration::from_secs(1))).ok()?;
     stream.set_write_timeout(Some(Duration::from_millis(250))).ok()?;
     serde_json::to_writer(&mut stream, message).ok()?;
     stream.write_all(b"\n").ok()?;
@@ -183,10 +191,19 @@ pub(crate) fn note_mouse(mouse: &crossterm::event::MouseEvent) {
 
 fn send_hidden(b: &mut Bridge) -> bool {
     b.pointer.leave();
-    b.latest = None;
-    let delivered = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":"hidden","visible":false,
-                           "pointer_events":[{"kind":"leave","x":0.0,"y":0.0,"button":0}]})).is_ok();
+    if !b.hidden {
+        b.epoch = b.epoch.wrapping_add(1);
+        b.hidden = true;
+        b.hidden_sent = false;
+        b.latest = None;
+        b.presented = None;
+        b.last_request = None;
+    }
+    if b.hidden_sent { return true; }
+    let delivered = b.tx.try_send(Request { epoch: b.epoch, value: json!({"v":1,"op":"layout","layout_key":"hidden","visible":false,
+                           "pointer_events":[{"kind":"leave","x":0.0,"y":0.0,"button":0}]}) }).is_ok();
     b.pointer.sent(delivered);
+    b.hidden_sent = delivered;
     delivered
 }
 
@@ -269,18 +286,26 @@ pub(crate) fn note_effort(effort: &str, baseline: bool) {
 pub(crate) fn frame(
     screen: Rect, model: &str, working: bool, hidden: bool,
     requester: crate::tui::FrameRequester,
-) -> Option<crate::pets::AmbientPetDraw> {
-    let lock = bridge()?;
-    let mut b = lock.lock().ok()?;
+) -> Frame {
+    let Some(lock) = bridge() else { return Frame::Clear; };
+    let Ok(mut b) = lock.lock() else { return Frame::Hold; };
     requester.schedule_frame_in(Duration::from_millis(33));
-    while let Ok(reply) = b.rx.try_recv() {
-        b.latest = reply.map(|value| Reply {value, received: Instant::now()});
+    while let Ok((epoch, reply)) = b.rx.try_recv() {
+        if epoch == b.epoch && !b.hidden {
+            if let Some(value) = reply {
+                if value.get("visible").and_then(Value::as_bool) == Some(true) {
+                    b.latest = Some(Reply {value});
+                }
+            }
+        }
     }
-    let Some(composer) = b.composer else { send_hidden(&mut b); return None; };
+    let Some(composer) = b.composer else { send_hidden(&mut b); return Frame::Clear; };
     if hidden || b.popup || composer.y < 3 || screen.width < 60 {
         send_hidden(&mut b);
-        return None;
+        return Frame::Clear;
     }
+    b.hidden = false;
+    b.hidden_sent = false;
     // Read real terminal pixel dimensions, preserving natural sprite proportions.
     let window = crossterm::terminal::window_size().ok();
     let (cell_w, cell_h) = match window {
@@ -303,25 +328,34 @@ pub(crate) fn frame(
     let typing = b.last_input.is_some_and(|t| t.elapsed() < Duration::from_millis(900));
     let submission = b.submission.as_ref().map(|(model, when)|
         json!({"id":b.submission_id,"model":model,"age_ms":when.elapsed().as_millis()}));
-    let delivered = b.tx.try_send(json!({"v":1,"op":"layout","layout_key":key,
+    if b.last_request.is_none_or(|when| when.elapsed() >= Duration::from_millis(33)) {
+    let delivered = b.tx.try_send(Request { epoch: b.epoch, value: json!({"v":1,"op":"layout","layout_key":key,
         "visible":true,"width_px":width_px,"height_px":height_px,
         "model":model,"phase":if working {"working"} else {"idle"},"typing":typing,
         "cursor":cursor,"pointer_events":pointer_events,"submission":submission,
         "activity":{"id":b.activity_id,"kind":b.activity},
-        "effort":b.effort,"effort_baseline":b.effort_baseline})).is_ok();
+        "effort":b.effort,"effort_baseline":b.effort_baseline}) }).is_ok();
     // A full IPC mailbox retries the same click/motion sequence next frame.
     b.pointer.sent(delivered);
-    let latest = b.latest.as_ref()?;
-    if latest.received.elapsed() > Duration::from_millis(800)
-        || latest.value.get("layout_key")?.as_str()? != key
-        || latest.value.get("visible")?.as_bool()? == false { return None; }
+    if delivered { b.last_request = Some(Instant::now()); }
+    }
+    // A missed deadline is not a request to hide. Keep the last good image;
+    // reanchor it immediately when the composer moves, until a new frame arrives.
+    let Some(latest) = b.latest.as_ref() else { return Frame::Hold; };
+    let Some(frame_id) = latest.value.get("frame_id").and_then(Value::as_u64) else { return Frame::Hold; };
+    if b.presented.as_ref().is_some_and(|(id, geometry)| *id == frame_id && geometry == &key) {
+        return Frame::Hold;
+    }
     #[cfg(not(test))]
-    let protocol = crate::pets::detect_pet_image_support().protocol()?;
+    let Some(protocol) = crate::pets::detect_pet_image_support().protocol() else { return Frame::Clear; };
     #[cfg(test)]
     let protocol = crate::pets::ImageProtocol::Kitty;
-    let frame = PathBuf::from(latest.value.get("frame")?.as_str()?);
-    let parent = PathBuf::from(std::env::var_os("CODEX_THEATER_SOCKET")?).parent()?.to_path_buf();
-    if frame.parent()? != parent || !frame.is_file() { return None; }
-    Some(crate::pets::AmbientPetDraw { frame, protocol, x, y, clear_top_y: y,
+    let Some(path) = latest.value.get("frame").and_then(Value::as_str) else { return Frame::Hold; };
+    let frame = PathBuf::from(path);
+    let Some(socket) = std::env::var_os("CODEX_THEATER_SOCKET") else { return Frame::Clear; };
+    let Some(parent) = std::path::Path::new(&socket).parent() else { return Frame::Clear; };
+    if frame.parent() != Some(parent) || !frame.is_file() { return Frame::Hold; }
+    b.presented = Some((frame_id,key));
+    Frame::Draw(crate::pets::AmbientPetDraw { frame, protocol, x, y, clear_top_y: y,
         columns, rows, height_px, sixel_dir: parent.join("sixel") })
 }

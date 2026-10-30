@@ -243,7 +243,11 @@ class UnixHandler(socketserver.StreamRequestHandler):
             result = self.server.theater.command(json.loads(line))
         except (ValueError, KeyError, OSError, TypeError) as exc:
             result = {"v":1,"ok":False,"error":str(exc)}
-        self.wfile.write(json.dumps(result,ensure_ascii=False).encode()+b"\n")
+        try:
+            self.wfile.write(json.dumps(result,ensure_ascii=False).encode()+b"\n")
+        except (BrokenPipeError,ConnectionResetError):
+            # A cancelled/timed-out display request does not warrant a traceback.
+            pass
 
 def make_http(theater, port):
     class Handler(BaseHTTPRequestHandler):
