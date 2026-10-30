@@ -17,9 +17,10 @@ class Play:
                 a.play=None
         self.active=None
 
-    def start(self,world,kind):
+    def start(self,world,kind,*,wake=True):
         if kind not in ('duo','tease','finish','prank'):raise ValueError('unknown play')
         if world.flight or world.spectacle or world.t<world.typing_until or world.phase not in ('idle','ready') or world.reduced_motion or world.paused:return False
+        if wake:world.life.touch(world)
         self.cancel(world)
         actors=world.actors[:]
         if not actors:return False
@@ -50,15 +51,15 @@ class Play:
 
     def step(self,world):
         for a in world.actors:a.play=None
-        blocked=(world.flight or world.spectacle or world.t<world.typing_until or world.phase in ('waiting','blocked'))
+        blocked=(world.flight or world.spectacle or world.t<world.typing_until or world.phase in ('waiting','blocked') or world.life.sleeping or world.reduced_motion)
         if blocked:
             self.cancel(world);return
         station=world.workshop.snapshot(world)
         delivery_busy=station and (not station['returning'] or station['return_age']<3)
         if self.finish_pending and world.phase in ('idle','ready') and not delivery_busy:
-            self.finish_pending=False;self.start(world,'finish')
+            self.finish_pending=False;self.start(world,'finish',wake=False)
         if not self.active and world.phase in ('idle','ready') and world.scene=='roam' and world.t>=self.next_social:
-            self.start(world,world.rng.choice(('duo','prank')))
+            self.start(world,world.rng.choice(('duo','prank')),wake=False)
             self.next_social=world.t+world.rng.uniform(24,42)
         event=self.active
         if not event:return
@@ -71,8 +72,10 @@ class Play:
             cue=0 if .8<age<3 else 1 if 3.2<age<5.5 else -1
             if cue>=0 and cue!=event['spoken']:
                 lines=DUETS.get(frozenset(event['actors']),('一起琢磨','你看，我发现一个小线索。','嗯嗯，我们一起试试。'))
-                text=lines[cue+1] if event['kind']=='duo' else ('借我看一眼嘛。' if cue==0 else '刚才什么都没发生哦。')
-                actor=actors[cue%len(actors)];world.say(world.actors.index(actor),text,2.0)
+                actor=actors[cue%len(actors)]
+                personal={'gpt':'这一步，我画成图给你看。','deepseek':'让我把条件再拆细一点。','claude':'别急，我把便签整理好。','gemini':'灵感又飞出来啦！'}
+                text=personal.get(actor.id,lines[cue+1]) if event['kind']=='duo' else ('借我看一眼嘛。' if cue==0 else '刚才什么都没发生哦。')
+                world.say(world.actors.index(actor),text,2.0)
                 event['spoken']=cue
         size,_=stage_metrics(len(world.actors),world.attention.width,world.attention.height)
         for index,a in enumerate(actors):

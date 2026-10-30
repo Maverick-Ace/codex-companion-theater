@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 from .world import World, CAST, NAMES, SCENES, PERSONALITIES
 from .render import Renderer, ROOT
+from .life import CollectionStore
 
 MAX_MESSAGE = 65536
 
@@ -84,10 +85,13 @@ def request(path, message, timeout=1):
             return json.loads(file.readline(MAX_MESSAGE))
 
 class Theater:
-    def __init__(self, runtime, seed=None):
+    def __init__(self, runtime, seed=None, collection_path=None):
         self.runtime = Path(runtime).resolve()
         self.runtime.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.world = World(seed)
+        self.collection = CollectionStore(collection_path)
+        self.world.life.owned,self.world.life.selected=self.collection.load()
+        self._collection_state=(tuple(sorted(self.world.life.owned)),self.world.life.selected)
         self.renderer = Renderer()
         self.lock = threading.RLock()
         self.last = time.monotonic()
@@ -99,8 +103,20 @@ class Theater:
 
     def advance(self):
         now = time.monotonic()
+        if not self.world.life.manual_hour:self.world.life.clock()
         self.world.tick(now-self.last)
         self.last = now
+
+    def save_collection(self):
+        life=self.world.life
+        current=(tuple(sorted(life.owned)),life.selected)
+        if current==self._collection_state:return
+        try:
+            life.owned,life.selected=self.collection.save(life.owned,life.selected)
+        except OSError:
+            # Decoration persistence must not interrupt the terminal frame loop.
+            life.notice={'text':'本次收藏暂存于当前窗口','until':self.world.t+3}
+        self._collection_state=(tuple(sorted(life.owned)),life.selected)
 
     def command(self, message):
         with self.lock:
@@ -142,6 +158,7 @@ class Theater:
                     self.world.work_event(activity.get('kind','idle'))
                 for event in events:
                     self.world.pointer(**event)
+                self.save_collection()
                 image = self.renderer.frame(self.world.snapshot(), width, height)
                 # A bounded ring. Atomic rename prevents the CLI reading an incomplete PNG.
                 self.frame_id += 1
@@ -158,6 +175,7 @@ class Theater:
             if op == "cast":
                 self.world.set_cast(message["ids"])
             elif op == "scene":
+                self.world.life.touch(self.world)
                 self.world.start_scene(message["name"])
             elif op == "pause":
                 self.world.paused = bool(message.get("value",True))
@@ -174,6 +192,13 @@ class Theater:
                          "Stop":"ready", "Interrupt":"idle", "SessionStart":"idle"}.get(event, message.get("phase"))
                 self.world.activity(phase, message.get("model"), message.get("typing",False),
                                     effort=message.get("effort"), cursor=cursor)
+            elif op == 'clock':
+                self.world.life.clock(message.get('hour'))
+            elif op == 'treasure':
+                self.world.life.touch(self.world)
+                self.world.life.spawn(self.world)
+            elif op == 'decoration':
+                self.world.life.select(message['id'])
             elif op == 'play':
                 self.world.play.start(self.world,message['kind'])
             elif op == "work":
@@ -189,6 +214,7 @@ class Theater:
                     self.world.pointer(**event)
             elif op not in ("status","catalog","hello"):
                 raise ValueError("unknown command")
+            self.save_collection()
             return {"v":1,"ok":True,"state":self.world.snapshot(),"geometry":self.last_geometry,
                     "catalog":[{"id":k,"name":NAMES[k],**{field:PERSONALITIES[k][field]
                                 for field in ("temperament","tempo","accent","gesture","inspiration")}}

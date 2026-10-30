@@ -6,7 +6,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT=Path(__file__).resolve().parents[1]/'assets/celestial'
 CROPS={'sun':(358,92,534,268),'earth':(336,0,696,360),
-       'moon':(0,85,140,275),'stars':(160,0,520,360)}
+       'moon':(0,0,178,240),'stars':(160,0,520,360)}
 
 @lru_cache(maxsize=48)
 def icon(kind, diameter):
@@ -24,7 +24,8 @@ def icon(kind, diameter):
             if r2>=1:continue
             z=math.sqrt(1-r2)
             ap[x,y]=round(255*min(1,(1-r2)*45))
-            light=1 if kind in ('sun','stars') else .32+.68*max(0,-.35*nx-.2*ny+.88*z)
+            base=.55 if kind=='moon' else .32
+            light=1 if kind in ('sun','stars') else base+(1-base)*max(0,-.35*nx-.2*ny+.88*z)
             sp[x,y]=(round(255*light),)*3
     photo=ImageChops.multiply(photo,shade).convert('RGBA');photo.putalpha(alpha)
     tile=Image.new('RGBA',(side,side));glow=Image.new('RGBA',tile.size)

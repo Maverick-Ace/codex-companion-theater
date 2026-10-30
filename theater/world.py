@@ -13,6 +13,7 @@ from .scenery import SetTransition
 from .attention import Attention
 from .workshop import Workshop
 from .play import Play
+from .life import Life
 from .launch import destination, snapshot as flight_snapshot, DURATION as FLIGHT_DURATION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +86,7 @@ class World:
         self._interaction_plans = {}
         self._interaction_round = 0
         self._next_interaction = 0.0
+        self.life = Life()
         self.play = Play()
         self.workshop = Workshop()
         self.attention = Attention()
@@ -101,6 +103,8 @@ class World:
         x, y = float(x), float(y)
         if not math.isfinite(x) or not math.isfinite(y) or not (-2 <= x <= 3 and -2 <= y <= 3):
             raise ValueError('invalid pointer coordinates')
+        if not self.paused and kind!='leave':
+            if self.life.pointer(self,kind if button==0 else 'move',x,y):return self.snapshot()
         self.attention.pointer(self, kind, x, y, button)
         self.play.pointer(self,kind)
         return self.snapshot()
@@ -149,7 +153,7 @@ class World:
 
     def _step_interactions(self):
         if (self.t < self.typing_until or self.reduced_motion or self.spectacle or self.flight
-                or any(a.reaction or a.attention or a.play for a in self.actors)
+                or self.life.sleeping or any(a.reaction or a.attention or a.play for a in self.actors)
                 or self.phase in ('waiting','blocked')):
             self._clear_interactions()
             return
@@ -336,6 +340,7 @@ class World:
         self.scene, self.scene_start = 'work', self.t
         self._set_environment('none')
         self.flight = {'start':self.t, 'model':self.model, 'destination':destination(self.model)}
+        self.life.touch(self)
         self.workshop.submit(self)
         self.play.cancel(self);self.play.finish_pending=False
         return self.snapshot()
@@ -346,6 +351,7 @@ class World:
         if model is not None:
             self.model = model
         if typing:
+            self.life.touch(self)
             self.play.cancel(self)
             self.cancel_flight()
             if cursor is not None:
@@ -486,7 +492,8 @@ class World:
         if self.spectacle and self.t-self.spectacle["start"] >= self.spectacle["duration"]:
             self.cancel_spectacle()
         quiet = self.t < self.typing_until
-        social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None and self.flight is None and self.play.active is None
+        self.life.step(self)
+        social = self.phase in ("idle", "ready") and not quiet and self.spectacle is None and self.flight is None and self.play.active is None and not self.life.sleeping
         age = self.t-self.scene_start
         if social and self.scene != "roam" and self.t >= self.scene_end:
             self.scene, self.pair = "roam", []
@@ -528,12 +535,15 @@ class World:
                 ramp = ramp*ramp*(3-2*ramp)
             speed = (.43*a.attention['pace']*ramp if observing else .3 if launching or (a.play and a.play['kind']=='tease') else .14)*a.tempo
             desired = max(-speed, min(speed, (a.target-a.x)*(4 if observing else 1.8)))
-            if (quiet and not observing) or self.reduced_motion or airborne or 0 <= self.t-a.arrival < 1.2:
+            if (quiet and not observing) or self.reduced_motion or self.life.sleeping or airborne or 0 <= self.t-a.arrival < 1.2:
                 desired = 0
             a.v += (desired-a.v)*(1-math.exp(-dt*(7 if observing else 9)))
             a.x = max(.07, min(.93, a.x+a.v*dt))
             a.travel += abs(a.v)*dt
-            if self.reduced_motion:
+            if self.life.sleeping:
+                a.pose, a.gesture = "rest", "rest"
+                a.bubble=""
+            elif self.reduced_motion:
                 a.pose, a.gesture = "idle", "rest"
             elif airborne:
                 a.pose, a.gesture = 'wave', 'hang' if a.reaction['kind'] == 'caught' else 'catch'
@@ -613,4 +623,4 @@ class World:
                 "departing": [dict(a) for a in self.departing], "pair": self.pair[:],
                 "pointer": self.attention.snapshot(),
                 "flight": flight_snapshot(self.flight,self.t,self.reduced_motion),
-                "station": self.workshop.snapshot(self), "work_kind":self.workshop.kind, "play":self.play.snapshot(self)}
+                "station": self.workshop.snapshot(self), "work_kind":self.workshop.kind, "play":self.play.snapshot(self), "life":self.life.snapshot(self)}
