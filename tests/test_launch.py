@@ -1,11 +1,12 @@
 """Accepted-submit deduplication, finite choreography and model destinations."""
+import math
 import json
 import tempfile
 import unittest
 from PIL import ImageChops
 from theater.world import World
 from theater.render import Renderer
-from theater.launch import destination, DURATION
+from theater.launch import destination, DURATION, _flight_pose, _orbit_pose, _nozzle, _draw_exhaust
 from theater.service import Theater
 
 def advance(world, seconds):
@@ -81,6 +82,32 @@ class LaunchTests(unittest.TestCase):
         w=World();w.reduced_motion=True;w.submit('sol');advance(w,5.2)
         a=r.frame(w.snapshot(),1040,156);advance(w,.5);b=r.frame(w.snapshot(),1040,156)
         self.assertIsNone(ImageChops.difference(a,b).getbbox())
+
+    def test_nose_follows_actual_motion_through_takeoff_and_all_orbit_quadrants(self):
+        w,h,floor=1040,180,176
+        for t in (2.3,2.7,3.2,3.7,3.81,4.2,4.7,5.2,5.7,6.2,6.7,7.2):
+            p=_flight_pose(t,w,h,floor);before=_flight_pose(t-.0001,w,h,floor);after=_flight_pose(t+.0001,w,h,floor)
+            dx,dy=after['x']-before['x'],after['y']-before['y'];length=math.hypot(dx,dy)
+            angle=math.radians(p['angle']);nose=(-math.sin(angle),-math.cos(angle))
+            self.assertGreater((nose[0]*dx+nose[1]*dy)/length,.999,t)
+            nx,ny,_,_=_nozzle(p)
+            self.assertLess((nx-p['x'])*nose[0]+(ny-p['y'])*nose[1],0)
+        left=_flight_pose(3.8-.0001,w,h,floor);right=_flight_pose(3.8+.0001,w,h,floor)
+        self.assertLess(math.hypot(left['x']-right['x'],left['y']-right['y']),.001)
+        self.assertLess(abs(left['angle']-right['angle']),.1)
+
+    def test_curved_exhaust_follows_past_positions_and_clips_at_edges(self):
+        from PIL import Image
+        path=lambda t:_orbit_pose(t,90,70,50,30,24,rate=3)
+        im=Image.new('RGBA',(180,140));_draw_exhaust(im,path(1.2),1.2,path,'#ffbd53')
+        self.assertIsNotNone(im.getbbox())
+        # Early emitted flame occupies the curved wake, away from the current axis.
+        past=path(1.2-.22);x,y,bx,by=_nozzle(past);drift=past['flame']*.8*(.22/.46)
+        x,y=round(x+bx*drift),round(y+by*drift)
+        self.assertIsNotNone(im.crop((x-3,y-3,x+4,y+4)).getbbox())
+        edge=lambda t:_orbit_pose(t,0,0,14,10,12,rate=3)
+        small=Image.new('RGBA',(80,48));_draw_exhaust(small,edge(.4),.4,edge,'#ffbd53')
+        self.assertIsNone(small.crop((60,0,80,48)).getbbox())
 
     def test_native_anchor_is_after_accept_and_contains_no_prompt(self):
         import importlib.util

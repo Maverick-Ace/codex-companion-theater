@@ -104,6 +104,86 @@ def _paste(canvas, im, x, y):
     left,top=max(0,x),max(0,y);right,bottom=min(canvas.width,x+im.width),min(canvas.height,y+im.height)
     if right>left and bottom>top:canvas.alpha_composite(im.crop((left-x,top-y,right-x,bottom-y)),(left,top))
 
+def _ship(x,y,dx,dy,height,flame,assembly=1):
+    # Pillow rotates counterclockwise; screen y increases downwards.
+    angle=math.degrees(math.atan2(-dx,-dy))
+    return dict(x=x,y=y,angle=angle,height=max(12,round(height)),flame=flame,assembly=assembly)
+
+def _orbit_pose(age,cx,cy,rx,ry,height,rate=1.4,phase=0,ramp=False):
+    elapsed=max(0,age)
+    # Ease into orbital speed after the launch curve reaches its endpoint.
+    theta=phase+rate*(elapsed-.18*(1-math.exp(-elapsed/.18)) if ramp else elapsed)
+    return _ship(cx+math.cos(theta)*rx,cy+math.sin(theta)*ry,
+                 -math.sin(theta)*rx,math.cos(theta)*ry,height,height*.58)
+
+def _flight_pose(age,w,h,floor):
+    cx,cy=w*.78,h*.40;rx=min(w*.13,h*.62);pad_x=w*.51
+    if age<2.2:
+        return _ship(pad_x,floor-h*.18,0,-1,h*.55,ease((age-1.6)/.6)*h*.17,ease(age/1.4))
+    if age>=3.8:
+        return _orbit_pose(age-3.8,cx,cy,rx,h*.25,h*.17,math.tau/1.9,math.pi,True)
+    u=ease((age-2.2)/1.6);v=1-u
+    # Both endpoints point upward. The endpoint and orbit share a tangent.
+    points=((pad_x,floor-h*.18),(pad_x,floor-h*.58),(cx-rx,cy+h*.20),(cx-rx,cy))
+    x,y=(v**3*points[0][axis]+3*v*v*u*points[1][axis]+3*v*u*u*points[2][axis]+u**3*points[3][axis] for axis in (0,1))
+    dx,dy=(3*v*v*(points[1][axis]-points[0][axis])+6*v*u*(points[2][axis]-points[1][axis])+3*u*u*(points[3][axis]-points[2][axis]) for axis in (0,1))
+    return _ship(x,y,dx,dy,h*(.55-.38*u),h*(.30-.20*u))
+
+def _nozzle(pose):
+    a=math.radians(pose['angle']);bx,by=math.sin(a),math.cos(a)
+    return pose['x']+bx*pose['height']*.30,pose['y']+by*pose['height']*.30,bx,by
+
+def _draw_exhaust(canvas,pose,age,path,color,strength=1):
+    """Sample elapsed emission time, so the wake keeps the curve it flew through."""
+    if pose['flame']<=0:return
+    lifetime=.46;points=[];halfwidth=max(1.2,pose['height']*.13)
+    for i in range(33):
+        u=i/32;t=age-u*lifetime
+        if t<0:break
+        past=path(t)
+        if past['flame']<=0:break
+        x,y,bx,by=_nozzle(past)
+        drift=past['flame']*.8*u
+        points.append((x+bx*drift,y+by*drift,u))
+    if len(points)<2:return
+    scale=2;pad=halfwidth*3+5
+    left=max(0,math.floor(min(x for x,y,u in points)-pad));top=max(0,math.floor(min(y for x,y,u in points)-pad))
+    right=min(canvas.width,math.ceil(max(x for x,y,u in points)+pad));bottom=min(canvas.height,math.ceil(max(y for x,y,u in points)+pad))
+    if right<=left or bottom<=top:return
+    tile=Image.new('RGBA',((right-left)*scale,(bottom-top)*scale));d=ImageDraw.Draw(tile)
+    # A broad faint halo, orange wake, gold flame, and a narrow white-hot core.
+    rgb=_rgb(color)
+    styles=((2.4,(*rgb,40)),(1.4,(255,130,83,150)),(.80,(255,208,112,225)),(.27,(255,247,219,245)))
+    for spread,rgba in styles:
+        for i in range(len(points)-2,-1,-1):
+            a,b=points[i],points[i+1];dx,dy=b[0]-a[0],b[1]-a[1];length=math.hypot(dx,dy)
+            if length<1e-5:continue
+            nx,ny=-dy/length,dx/length
+            def edges(p):
+                x,y,u=p;width=halfwidth*spread*(1-u)**.65*(1+.5*u)
+                return ((x+nx*width-left)*scale,(y+ny*width-top)*scale),((x-nx*width-left)*scale,(y-ny*width-top)*scale)
+            ap,am=edges(a);bp,bm=edges(b)
+            opacity=round(rgba[3]*(1-a[2])**1.5*strength)
+            d.polygon((ap,bp,bm,am),fill=(*rgba[:3],opacity))
+    halo=tile.filter(ImageFilter.GaussianBlur(2*scale))
+    halo.alpha_composite(tile)
+    canvas.alpha_composite(halo.resize((right-left,bottom-top),Image.Resampling.LANCZOS),(left,top))
+    # Embers drift from earlier nozzle positions instead of rotating as one rod.
+    d=ImageDraw.Draw(canvas)
+    for n in range(12):
+        u=(age*1.8+n*.083)%1;t=age-u*lifetime
+        if t<0:continue
+        past=path(t)
+        if past['flame']<=0:continue
+        x,y,bx,by=_nozzle(past);side=math.sin(n*2.4)*u*halfwidth*2.5
+        x+=bx*past['flame']*u+by*side;y+=by*past['flame']*u-bx*side
+        r=max(.35,(1-u)*1.2);alpha=round(175*min(1,u*8)*(1-u)*strength)
+        d.ellipse((x-r,y-r,x+r,y+r),fill=(255,190+n%3*16,130,alpha))
+
+def _draw_ship(canvas,pose,color):
+    rocket=_rocket(pose['height'],color,pose['assembly']).rotate(pose['angle'],resample=Image.Resampling.BICUBIC,expand=True)
+    _paste(canvas,rocket,pose['x'],pose['y'])
+
 def draw_launch(canvas, state, floor, size, positions, font):
     flight=state.get('flight')
     if not flight:return
@@ -135,10 +215,8 @@ def draw_launch(canvas, state, floor, size, positions, font):
             d.ellipse((x,y,x+1,y+1),fill=(230,217,255,max(0,a)))
         pad_x=w*.51
         d.ellipse((pad_x-h*.19,floor-3,pad_x+h*.19,floor+1),fill='#acb4da77',outline='#cbd2f1aa')
+        pose=_flight_pose(age,w,h,floor)
         if age<2.2:
-            x,y=pad_x,floor-h*.18
-            rocket_h=h*.55;angle=0
-            assembly=ease(age/1.4)
             if age<1.6:
                 for i,(ax,af,actor_size) in enumerate(positions):
                     hand=(ax,af-actor_size*.45)
@@ -149,48 +227,15 @@ def draw_launch(canvas, state, floor, size, positions, font):
                         d.rounded_rectangle((px-4,py-3,px+4,py+3),radius=2,fill='#e4def6',outline=color)
                     # Little wrenches make the crew's assembly readable.
                     if i%2==0:d.line((hand[0]-4,hand[1]+4,hand[0]+3,hand[1]-4),fill='#d3d7ed',width=2)
-            flame=ease((age-1.6)/.6)*h*.17
-        elif age<3.8:
-            u=ease((age-2.2)/1.6)
-            x=pad_x+(cx-orbit_rx-pad_x)*u
-            y=(floor-h*.18)*(1-u)+cy*u-math.sin(u*math.pi)*h*.20
-            rocket_h=h*(.55-.38*u);angle=-math.sin(u*math.pi)*55;assembly=1
-            flame=h*(.30-.20*u)
-        else:
-            theta=(age-3.8)*math.tau/1.9+math.pi
-            rx=orbit_rx;ry=h*.25
-            x=cx+math.cos(theta)*rx;y=cy+math.sin(theta)*ry
-            dx=-math.sin(theta)*rx;dy=math.cos(theta)*ry
-            angle=-math.degrees(math.atan2(dx,-dy))
-            rocket_h=h*.17;assembly=1;flame=h*.10
-            # A gently luminous orbit with a short, fading trail.
-            d.ellipse((cx-rx,cy-ry,cx+rx,cy+ry),outline=(*rgb,65),width=1)
-            for n in range(1,17):
-                a=theta-n*.045;px=cx+math.cos(a)*rx;py=cy+math.sin(a)*ry
-                r=max(.6,2.5-n*.12)
-                d.ellipse((px-r,py-r,px+r,py+r),fill=(*rgb,round(180*(1-n/18))))
-        if flame>0:
-            # Multi-layer hot core and turbulent particles follow the ship's axis.
-            radians=math.radians(-angle);back_x=-math.sin(radians);back_y=math.cos(radians)
-            nozzle_x=x+back_x*rocket_h*.25;nozzle_y=y+back_y*rocket_h*.25
+        if age>=3.8:
+            d.ellipse((cx-orbit_rx,cy-h*.25,cx+orbit_rx,cy+h*.25),outline=(*rgb,50),width=1)
+        if pose['flame']>0:
+            nozzle_x,nozzle_y,_,_=_nozzle(pose)
             _paste(layer,_exhaust_glow(max(12,round(h*.24))),nozzle_x,nozzle_y)
             if age<2.2:
                 spread=ease((age-1.6)/.6)*h*.22
                 d.ellipse((pad_x-spread,floor-5,pad_x+spread,floor),fill='#ffc87690')
-            side_x,side_y=back_y,-back_x
-            flicker=1+.13*math.sin(age*43)+.07*math.sin(age*71)
-            for length,spread,fill in ((1,.13,'#c695ff90'),(.85,.10,'#ff8756dd'),(.62,.065,'#ffd778ff'),(.35,.035,'#fff9dcff')):
-                tip_x=nozzle_x+back_x*flame*length*flicker;tip_y=nozzle_y+back_y*flame*length*flicker
-                sw=h*spread*.35
-                d.polygon(((nozzle_x+side_x*sw,nozzle_y+side_y*sw),(tip_x,tip_y),
-                           (nozzle_x-side_x*sw,nozzle_y-side_y*sw)),fill=fill)
-            for n in range(18):
-                u=(age*1.9+n*.071)%1;spread=math.sin(n*2.4+age*6)*u*h*.06
-                px=nozzle_x+back_x*flame*u*1.6+side_x*spread
-                py=nozzle_y+back_y*flame*u*1.6+side_y*spread
-                r=(1-u)*1.7
-                d.ellipse((px-r,py-r,px+r,py+r),fill=(255,180+n%3*25,124,round(200*(1-u))))
-        rocket=_rocket(rocket_h,color,assembly).rotate(angle,resample=Image.Resampling.BICUBIC,expand=True)
-        _paste(layer,rocket,x,y)
+            _draw_exhaust(layer,pose,age,lambda t:_flight_pose(t,w,h,floor),color)
+        _draw_ship(layer,pose,color)
     layer.putalpha(layer.getchannel('A').point(lambda a:round(a*fade)))
     canvas.alpha_composite(layer)

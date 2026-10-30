@@ -1,7 +1,7 @@
 """Task metadata becomes tiny crew jobs and one bounded return delivery."""
 import math
 from PIL import Image,ImageDraw
-from .launch import _planet, _rocket, _paste, destination, ease
+from .launch import _planet, _rocket, _paste, _orbit_pose, _draw_exhaust, _draw_ship, destination, ease
 
 KINDS={'think','read','search','command','edit','tool','complete','interrupted','failed','idle'}
 
@@ -83,8 +83,13 @@ def draw_station(canvas,state,floor,font):
         # A small tracking telescope and one discrete beacon.
         d.line((w*.91,floor,w*.93,floor-h*.2),fill='#9ba4bd',width=2)
         d.line((w*.93,floor-h*.2,w*.97,floor-h*.29),fill='#c4c7dd',width=4)
-        theta=0 if reduced else station['age']*1.4
-        _paste(canvas,_rocket(h*.10,target['color']),cx+math.cos(theta)*h*.25,cy+math.sin(theta)*h*.12)
+        if reduced:
+            _paste(canvas,_rocket(h*.10,target['color']),cx+h*.25,cy)
+        else:
+            path=lambda t:_orbit_pose(t,cx,cy,h*.25,h*.12,h*.10)
+            pose=path(station['age'])
+            _draw_exhaust(canvas,pose,station['age'],path,target['color'],strength=.45)
+            _draw_ship(canvas,pose,target['color'])
         return
     progress=ease(age/2.7)
     x=cx+(w*.54-cx)*progress;y=cy+(floor-h*.12-cy)*progress-math.sin(progress*math.pi)*h*.15
