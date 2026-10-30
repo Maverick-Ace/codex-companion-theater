@@ -4,6 +4,7 @@ import hashlib
 import math
 import re
 from PIL import Image, ImageDraw, ImageFilter
+from .celestial import icon as celestial_icon
 
 DURATION = 7.8
 DESTINATIONS = {
@@ -51,6 +52,8 @@ def _exhaust_glow(side):
 @lru_cache(maxsize=96)
 def _planet(kind, color, light, diameter):
     """Antialiased miniature, with cached local glow rather than full-frame blur."""
+    official=celestial_icon(kind,diameter)
+    if official is not None:return official
     size=diameter*4
     im=Image.new('RGBA',(size,size));d=ImageDraw.Draw(im)
     c=size/2;r=size*.25

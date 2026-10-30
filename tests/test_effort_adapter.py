@@ -15,6 +15,7 @@ class EffortAdapterTests(unittest.TestCase):
         tui = root/'codex-rs/tui/src'
         (tui/'bottom_pane').mkdir(parents=True)
         (tui/'chatwidget').mkdir()
+        (tui/'chatwidget/protocol.rs').write_text('        let from_replay = replay_kind.is_some();\n')
         (tui/'chatwidget/input_submission.rs').write_text('        if !self.submit_op(op.clone()) {\n            return (false, None);\n        }\n')
         (tui/'lib.rs').write_text('mod pets;\n')
         (tui/'app.rs').write_text('''        match &event {
@@ -38,7 +39,7 @@ class EffortAdapterTests(unittest.TestCase):
             tui = self.source(root)
             before = {p:p.read_text() for p in tui.rglob('*.rs')}
             output = migrate.prepare(root)
-            self.assertEqual(len(output), 4)
+            self.assertEqual(len(output), 5)
             composer = output[tui/'bottom_pane/chat_composer.rs']
             self.assertEqual(composer.count('companion_bridge::note_effort('), 2)
             self.assertIn('unwrap_or_default(), is_baseline,', composer)

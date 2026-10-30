@@ -11,6 +11,7 @@ from pathlib import Path
 from .props import interaction_slots, POSITIONS
 from .scenery import SetTransition
 from .attention import Attention
+from .workshop import Workshop
 from .launch import destination, snapshot as flight_snapshot, DURATION as FLIGHT_DURATION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,7 @@ class Actor:
     interaction: dict | None = None
     reaction: dict | None = None
     attention: dict | None = None
+    job: dict | None = None
 
 class World:
     def __init__(self, seed=7, cast=None, density=4):
@@ -81,6 +83,7 @@ class World:
         self._interaction_plans = {}
         self._interaction_round = 0
         self._next_interaction = 0.0
+        self.workshop = Workshop()
         self.attention = Attention()
         self._populate(self.pool[:self.density])
 
@@ -328,6 +331,7 @@ class World:
         self.scene, self.scene_start = 'work', self.t
         self._set_environment('none')
         self.flight = {'start':self.t, 'model':self.model, 'destination':destination(self.model)}
+        self.workshop.submit(self)
         return self.snapshot()
 
     def activity(self, phase=None, model=None, typing=False, effort=None, cursor=None):
@@ -352,6 +356,7 @@ class World:
         if phase and phase != self.phase:
             previous = self.phase
             self.phase = phase
+            if previous=='working' and phase in ('idle','ready'):self.workshop.event(self,'complete')
             if self.spectacle:
                 return
             if self.flight:
@@ -377,6 +382,10 @@ class World:
                 self.say(0, self._line(self.actors[0].id, "waiting"), 4)
             elif previous == "working" and phase in ("idle", "ready"):
                 self.start_scene("celebrate")
+
+    def work_event(self, kind):
+        self.workshop.event(self,kind)
+        return self.snapshot()
 
     def _line(self, identifier, context):
         lines = PERSONALITIES[identifier]["lines"]
@@ -491,6 +500,7 @@ class World:
             for i, a in enumerate(self.actors[:2]):
                 a.target = .5+.29*math.sin(age*.65+i*1.5)
         self.attention.step(self, dt)
+        self.workshop.step(self)
         self._step_interactions()
         for i, a in enumerate(self.actors):
             launching = self.flight is not None
@@ -522,6 +532,9 @@ class World:
                 a.facing = self.attention.gaze_direction(self, a)
                 a.pose = 'rest' if a.attention['style'] == 'crouch' else 'idle'
                 a.gesture = 'look_up' if a.attention['look_up'] else 'observe_' + a.attention['style']
+            elif a.job:
+                a.pose='rest' if a.job['kind']=='read' else 'idle'
+                a.gesture={'read':'read','search':'peek','command':'type','edit':'write','tool':'type'}.get(a.job['kind'],'think')
             elif launching:
                 age = self.t-self.flight['start']
                 a.pose = 'idle' if age<1.6 else 'wave'
@@ -582,4 +595,5 @@ class World:
                 "pool": self.pool[:], "density": self.density, "generation": self.generation,
                 "departing": [dict(a) for a in self.departing], "pair": self.pair[:],
                 "pointer": self.attention.snapshot(),
-                "flight": flight_snapshot(self.flight,self.t,self.reduced_motion)}
+                "flight": flight_snapshot(self.flight,self.t,self.reduced_motion),
+                "station": self.workshop.snapshot(self), "work_kind":self.workshop.kind}

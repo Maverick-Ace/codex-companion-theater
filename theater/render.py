@@ -11,6 +11,7 @@ from .geometry import stage_metrics, stage_position
 from .attention_render import accents
 from .brands import draw_brand_portal
 from .launch import draw_launch
+from .workshop import draw_jobs,draw_station
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
@@ -190,5 +191,7 @@ class Renderer:
                 draw.line((px-3,py,px+2,py-3,px+1,py+3),fill="#b5acc5")
         scene_details(canvas,state,floor,size)
         power_foreground(canvas,state)
+        draw_jobs(canvas,state,positions)
+        draw_station(canvas,state,floor,self.font)
         draw_launch(canvas,state,floor,size,positions,self.font)
         return canvas

@@ -73,6 +73,8 @@ struct Reply { value: Value, received: Instant }
 struct Bridge {
     submission_id: u64,
     submission: Option<(String, Instant)>,
+    activity_id: u64,
+    activity: &'static str,
     composer: Option<Rect>,
     cursor: Option<(u16, u16)>,
     pointer: PointerInput,
@@ -97,7 +99,7 @@ fn bridge() -> Option<&'static Mutex<Bridge>> {
                 let _ = responses.try_send(reply);
             }
         }).ok()?;
-        Some(Mutex::new(Bridge { submission_id: 0, submission: None, composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
+        Some(Mutex::new(Bridge { activity_id: 0, activity: "idle", submission_id: 0, submission: None, composer: None, cursor: None, pointer: PointerInput::default(), popup: false, last_input: None, effort: None, effort_baseline: true, tx, rx, latest: None }))
     }).as_ref()
 }
 
@@ -209,7 +211,43 @@ pub(crate) fn note_submission(model: &str) {
         if let Ok(mut b) = lock.lock() {
             b.submission_id = b.submission_id.saturating_add(1);
             b.submission = Some((model.to_owned(), Instant::now()));
+            b.activity = "think";
+            b.activity_id = b.activity_id.saturating_add(1);
             b.last_input = None;
+        }
+    }
+}
+
+/// Classify enum variants only: never serialize paths, commands or tool arguments.
+pub(crate) fn note_activity(notification: &codex_app_server_protocol::ServerNotification) {
+    use codex_app_server_protocol::{ServerNotification, ThreadItem, CommandAction, TurnStatus};
+    let kind = match notification {
+        ServerNotification::ItemStarted(n) => match &n.item {
+            ThreadItem::Reasoning { .. } => "think",
+            ThreadItem::CommandExecution { command_actions, .. } => {
+                if command_actions.iter().any(|a| matches!(a, CommandAction::Read { .. } | CommandAction::ListFiles { .. })) { "read" }
+                else if command_actions.iter().any(|a| matches!(a, CommandAction::Search { .. })) { "search" }
+                else { "command" }
+            },
+            ThreadItem::FileChange { .. } => "edit",
+            ThreadItem::WebSearch { .. } => "search",
+            ThreadItem::McpToolCall { .. } | ThreadItem::DynamicToolCall { .. } => "tool",
+            _ => return,
+        },
+        ServerNotification::TurnCompleted(n) => match n.turn.status {
+            TurnStatus::Completed => "complete",
+            TurnStatus::Interrupted => "interrupted",
+            TurnStatus::Failed => "failed",
+            _ => return,
+        },
+        _ => return,
+    };
+    if let Some(lock) = bridge() {
+        if let Ok(mut b) = lock.lock() {
+            if b.activity != kind {
+                b.activity = kind;
+                b.activity_id = b.activity_id.saturating_add(1);
+            }
         }
     }
 }
@@ -269,6 +307,7 @@ pub(crate) fn frame(
         "visible":true,"width_px":width_px,"height_px":height_px,
         "model":model,"phase":if working {"working"} else {"idle"},"typing":typing,
         "cursor":cursor,"pointer_events":pointer_events,"submission":submission,
+        "activity":{"id":b.activity_id,"kind":b.activity},
         "effort":b.effort,"effort_baseline":b.effort_baseline})).is_ok();
     // A full IPC mailbox retries the same click/motion sequence next frame.
     b.pointer.sent(delivered);

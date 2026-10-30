@@ -1,0 +1,33 @@
+{
+  "retrieved": "2026-10-30",
+  "images": {
+    "sun": {
+      "file": "sun.webp",
+      "source": "https://learn.chatgpt.com/images/api/models/gpt-6.1-sol-texture.webp",
+      "page": "https://learn.chatgpt.com/docs/models",
+      "sha256": "d97030a48ec1edf4db340994f5c74d8a83d72809fec694360aaf1a73e9189093",
+      "usage": "Official source image used as local rendering material; framing, shading and glow are theater effects."
+    },
+    "earth": {
+      "file": "earth.webp",
+      "source": "https://learn.chatgpt.com/images/api/models/gpt-6.1-terra-block.webp",
+      "page": "https://learn.chatgpt.com/docs/models",
+      "sha256": "ba9e0b6bc65c1eda156e75475901659585e5e2fbdee56b497472d8222a118801",
+      "usage": "Official source image used as local rendering material; framing, shading and glow are theater effects."
+    },
+    "moon": {
+      "file": "moon.webp",
+      "source": "https://learn.chatgpt.com/images/api/models/gpt-5.6-luna.webp",
+      "page": "https://learn.chatgpt.com/docs/models",
+      "sha256": "0c67e063b38e798db0d50ec848cda2f00dd35f0df52d697dc125e3eb897d6df7",
+      "usage": "Official source image used as local rendering material; framing, shading and glow are theater effects."
+    },
+    "stars": {
+      "file": "stars.webp",
+      "source": "https://learn.chatgpt.com/images/api/models/gpt-6-astra-texture.webp",
+      "page": "https://learn.chatgpt.com/docs/models",
+      "sha256": "ee360bda19f3c44d82c0a087c850b4088f46c4c94dae8d5dc9ce1d21163e86cb",
+      "usage": "Official source image used as local rendering material; framing, shading and glow are theater effects."
+    }
+  }
+}

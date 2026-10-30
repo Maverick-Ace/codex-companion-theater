@@ -95,6 +95,7 @@ class Theater:
         self.last_geometry = None
         self.native_effort = None
         self.native_submission = 0
+        self.native_activity = 0
 
     def advance(self):
         now = time.monotonic()
@@ -135,6 +136,10 @@ class Theater:
                         age = submission.get('age_ms',0)
                         if isinstance(age,(int,float)) and 0<=age<3000:
                             self.world.submit(submission.get('model',message.get('model','')))
+                activity=message.get('activity')
+                if isinstance(activity,dict) and isinstance(activity.get('id'),int) and activity['id']>self.native_activity:
+                    self.native_activity=activity['id']
+                    self.world.work_event(activity.get('kind','idle'))
                 for event in events:
                     self.world.pointer(**event)
                 image = self.renderer.frame(self.world.snapshot(), width, height)
@@ -169,6 +174,8 @@ class Theater:
                          "Stop":"ready", "Interrupt":"idle", "SessionStart":"idle"}.get(event, message.get("phase"))
                 self.world.activity(phase, message.get("model"), message.get("typing",False),
                                     effort=message.get("effort"), cursor=cursor)
+            elif op == "work":
+                self.world.work_event(message['kind'])
             elif op == "submit":
                 self.world.activity('working',model=message.get('model'))
                 self.world.submit(message.get('model'))

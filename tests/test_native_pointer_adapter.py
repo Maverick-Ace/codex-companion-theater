@@ -16,6 +16,7 @@ class NativePointerAdapterTests(unittest.TestCase):
         tui = root/'codex-rs/tui/src'
         (tui/'bottom_pane').mkdir(parents=True)
         (tui/'chatwidget').mkdir()
+        (tui/'chatwidget/protocol.rs').write_text('        let from_replay = replay_kind.is_some();\n')
         (tui/'chatwidget/input_submission.rs').write_text('        if !self.submit_op(op.clone()) {\n            return (false, None);\n        }\n')
         (tui/'lib.rs').write_text('mod pets;\n')
         (tui/'app.rs').write_text('''        tui.link_hover.observe(&event);
@@ -38,7 +39,7 @@ class NativePointerAdapterTests(unittest.TestCase):
             root = Path(temp)
             tui = self.source(root)
             output = migrate.prepare(root)
-            self.assertEqual(len(output), 4)
+            self.assertEqual(len(output), 5)
             app = output[tui/'app.rs']
             self.assertLess(app.index('companion_bridge::note_mouse(mouse)'),
                             app.index('self.handle_rendered_selection_event'))
