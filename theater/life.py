@@ -1,13 +1,14 @@
 """Local day/night ambience, rest, and a small persistent decoration collection."""
 from datetime import datetime
+from functools import lru_cache
 import fcntl
 import json
 import math
 import os
 from pathlib import Path
 import tempfile
-from PIL import ImageDraw
-from .celestial import icon
+from PIL import Image,ImageDraw,ImageFilter
+from .celestial import ambience
 
 DECORATIONS={'star_lamp':'星球灯','paper_plane':'纸飞机挂饰','plant':'小花盆','moon_cushion':'月亮抱枕','star_map':'星图挂画'}
 
@@ -99,17 +100,13 @@ class Life:
 def draw_ambience(canvas,state,floor):
     life=state.get('life')
     if not life:return
-    d=ImageDraw.Draw(canvas);w,h=canvas.size;night=life['period']=='night'
-    # Tiny window and low-alpha rays occupy the corner, not the transcript.
-    x,y=12,8;size=max(13,round(h*.15))
-    celestial=icon('moon' if night else 'sun',size//2)
-    if night:
-        for n in range(7):
-            px=w*(.035+n*.038);py=h*(.06+(n*17%13)/100)
-            d.ellipse((px,py,px+1,py+1),fill='#b3aecb55')
-    elif life['period']=='day':
-        d.polygon(((0,0),(w*.11,0),(w*.19,h*.65),(w*.11,h*.65)),fill='#ffe4a309')
-    canvas.alpha_composite(celestial,(x,y))
+    d=ImageDraw.Draw(canvas);w,h=canvas.size
+    # Keep the weather readable and local even in an extra-wide terminal.
+    x,y=10,5;size=min(44,max(30,round(h*.22)))
+    if life['period']=='day':
+        beam=_sunbeam(size)
+        canvas.alpha_composite(beam,(x,y))
+    canvas.alpha_composite(ambience(life['period'],size),(x,y))
     if life['selected']:
         key=life['selected'];cx=w*.08;cy=floor-h*.12
         if key=='plant':
@@ -128,6 +125,13 @@ def draw_ambience(canvas,state,floor):
         else:
             d.line((cx,cy-8,cx,cy+12),fill='#a596ad',width=2)
             d.ellipse((cx-8,cy-22,cx+8,cy-6),fill='#dcca9f',outline='#f1d6a0')
+
+@lru_cache(maxsize=16)
+def _sunbeam(size):
+    """A short feathered highlight; never a translucent panel across the stage."""
+    beam=Image.new('RGBA',(size*3,size*2));d=ImageDraw.Draw(beam)
+    d.polygon(((size*.5,size*.5),(size,size*.5),(size*2.55,size*1.55),(size*1.7,size*1.55)),fill=(241,210,153,9))
+    return beam.filter(ImageFilter.GaussianBlur(max(3,size*.16)))
 
 def draw_life(canvas,state,positions,font):
     life=state.get('life')
