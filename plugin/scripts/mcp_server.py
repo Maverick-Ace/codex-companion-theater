@@ -16,7 +16,7 @@ for tool in TOOLS:
 
 def handle(m):
     method=m.get("method")
-    if method=="initialize":return {"protocolVersion":m.get("params",{}).get("protocolVersion","2024-11-05"),"capabilities":{"tools":{}},"serverInfo":{"name":"companion-theater","version":"0.9.1"}}
+    if method=="initialize":return {"protocolVersion":m.get("params",{}).get("protocolVersion","2024-11-05"),"capabilities":{"tools":{}},"serverInfo":{"name":"companion-theater","version":"0.10.0"}}
     if method=="ping":return {}
     if method=="tools/list":return {"tools":TOOLS}
     if method=="tools/call":

@@ -1,14 +1,13 @@
-"""Local day/night ambience, rest, and a small persistent decoration collection."""
+"""Idle rest and a small persistent collection of stage decorations."""
 from datetime import datetime
-from functools import lru_cache
 import fcntl
 import json
 import math
 import os
 from pathlib import Path
 import tempfile
-from PIL import Image,ImageDraw,ImageFilter
-from .celestial import ambience
+from PIL import Image,ImageDraw
+from .gifts import decoration,floating,place
 
 DECORATIONS={'star_lamp':'星球灯','paper_plane':'纸飞机挂饰','plant':'小花盆','moon_cushion':'月亮抱枕','star_map':'星图挂画'}
 
@@ -97,41 +96,12 @@ class Life:
                 'sleeping':self.sleeping,'treasure':treasure,'owned':sorted(self.owned),'selected':self.selected,
                 'notice':self.notice['text'] if self.notice else None,'catalog':DECORATIONS}
 
-def draw_ambience(canvas,state,floor):
+def draw_decorations(canvas,state,floor):
     life=state.get('life')
-    if not life:return
-    d=ImageDraw.Draw(canvas);w,h=canvas.size
-    # Keep the weather readable and local even in an extra-wide terminal.
-    x,y=10,5;size=min(44,max(30,round(h*.22)))
-    if life['period']=='day':
-        beam=_sunbeam(size)
-        canvas.alpha_composite(beam,(x,y))
-    canvas.alpha_composite(ambience(life['period'],size),(x,y))
-    if life['selected']:
-        key=life['selected'];cx=w*.08;cy=floor-h*.12
-        if key=='plant':
-            d.polygon(((cx-6,cy),(cx+6,cy),(cx+4,cy+12),(cx-4,cy+12)),fill='#ae8f9f')
-            d.line((cx,cy,cx,cy-14),fill='#7cac8e',width=2)
-            d.ellipse((cx-9,cy-13,cx,cy-7),fill='#9cbd99');d.ellipse((cx,cy-18,cx+8,cy-12),fill='#9cbd99')
-        elif key=='paper_plane':
-            d.line((cx,0,cx,h*.25),fill='#c5b3cf55')
-            d.polygon(((cx-13,h*.25),(cx+14,h*.25-5),(cx+1,h*.25+9)),fill='#d8d4e7',outline='#a79bbd')
-        elif key=='moon_cushion':
-            d.rounded_rectangle((cx-13,cy-4,cx+13,cy+12),radius=5,fill='#b5a4c9',outline='#d4c3e2')
-            d.arc((cx-5,cy-1,cx+5,cy+9),60,300,fill='#f4ddb1',width=2)
-        elif key=='star_map':
-            d.rectangle((cx-17,10,cx+17,34),fill='#514663',outline='#9c87b0')
-            d.line((cx-10,27,cx,17,cx+8,26,cx+12,15),fill='#b6b5d8',width=1)
-        else:
-            d.line((cx,cy-8,cx,cy+12),fill='#a596ad',width=2)
-            d.ellipse((cx-8,cy-22,cx+8,cy-6),fill='#dcca9f',outline='#f1d6a0')
-
-@lru_cache(maxsize=16)
-def _sunbeam(size):
-    """A short feathered highlight; never a translucent panel across the stage."""
-    beam=Image.new('RGBA',(size*3,size*2));d=ImageDraw.Draw(beam)
-    d.polygon(((size*.5,size*.5),(size,size*.5),(size*2.55,size*1.55),(size*1.7,size*1.55)),fill=(241,210,153,9))
-    return beam.filter(ImageFilter.GaussianBlur(max(3,size*.16)))
+    if not life or not life['selected']:return
+    w,h=canvas.size;side=max(30,min(66,round(h*.43)))
+    tile=decoration(life['selected'],side)
+    place(canvas,tile,max(side*.6,w*.08),floor-side/2)
 
 def draw_life(canvas,state,positions,font):
     life=state.get('life')
@@ -146,15 +116,12 @@ def draw_life(canvas,state,positions,font):
     t=life['treasure']
     if t:
         x,y=t['x']*w,t['y']*h
-        if t['kind']=='plane':d.polygon(((x-9,y-4),(x+11,y),(x-5,y+7),(x-2,y)),fill='#d6cdeb',outline='#a3b2d5')
-        elif t['kind']=='box':
-            d.rectangle((x-6,y-6,x+6,y+6),fill='#d6a6b4',outline='#f3d6b0');d.line((x,y-6,x,y+6),fill='#f3d6b0',width=2)
-        else:
-            points=[]
-            for n in range(10):
-                a=n*math.pi/5-math.pi/2;r=8 if n%2==0 else 3.5
-                points.append((x+math.cos(a)*r,y+math.sin(a)*r))
-            d.polygon(points,fill='#efd59d',outline='#fff0c5')
+        side=max(28,min(38,round(h*.20)))
+        tile=floating(t['kind'],side).rotate(math.sin(t['age']*1.8)*6,resample=Image.Resampling.BICUBIC,expand=True)
+        fade=min(1,t['age']/.3,max(0,(12-t['age'])/.5))
+        if fade<1:
+            tile=tile.copy();tile.putalpha(tile.getchannel('A').point(lambda a:round(a*fade)))
+        place(canvas,tile,x,y)
     if life['notice']:
         text=life['notice'];f=font(max(10,round(h*.07)));b=d.textbbox((0,0),text,font=f)
         d.text(((w-b[2]+b[0])/2,2),text,font=f,fill='#e5c4de')

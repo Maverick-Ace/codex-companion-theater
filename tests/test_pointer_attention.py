@@ -210,8 +210,7 @@ class CaretWatchingTests(unittest.TestCase):
         caught = single()
         caught.pointer('move', *overhead(caught))
         advance(caught, .25)
-        state=caught.snapshot();state['life']=None  # Isolate the character from intentional corner ambience.
-        im = renderer.frame(state, 960, 180)
+        im = renderer.frame(caught.snapshot(), 960, 180)
         self.assertEqual(im.size, (960, 180))
         self.assertIsNone(im.crop((0, 0, 150, 180)).getbbox())
 

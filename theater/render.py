@@ -13,7 +13,7 @@ from .brands import draw_brand_portal
 from .launch import draw_launch
 from .workshop import draw_jobs,draw_station
 from .play import draw_play
-from .life import draw_ambience,draw_life
+from .life import draw_decorations,draw_life
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
@@ -87,7 +87,7 @@ class Renderer:
         effect = state.get('spectacle')
         ensemble = bool(effect and effect['kind'] == 'ultra')
         size, floor = stage_metrics(len(state['cast']), width, height, labels, ensemble)
-        draw_ambience(canvas,state,floor)
+        draw_decorations(canvas,state,floor)
         draw_set(canvas,state,floor,size)
         def placement(a, index):
             return stage_position(a, index, len(state['cast']), width, size, floor, ensemble)

@@ -2,6 +2,7 @@
 import math
 from PIL import Image,ImageDraw
 from .launch import _planet, _rocket, _paste, _orbit_pose, _draw_exhaust, _draw_ship, destination, ease
+from .gifts import parcel,decoration,place
 
 KINDS={'think','read','search','command','edit','tool','complete','interrupted','failed','idle'}
 
@@ -97,9 +98,15 @@ def draw_station(canvas,state,floor,font):
         _paste(canvas,_rocket(h*.15,target['color']).rotate(160,expand=True),x,y)
     else:
         x=w*.54;y=floor-h*.12
-        d.rounded_rectangle(tuple(round(v) for v in (x-11,y-7,x+11,y+9)),radius=2,fill='#e7b1ad',outline='#ffe0b8')
-        d.line((x,y-7,x,y+9),fill='#ffedba',width=2)
-        d.line((x-11,y,x+11,y),fill='#ffedba',width=2)
+        opened=1 if reduced else ease((age-2.7)/.7)
+        side=max(26,round(h*.19));box=parcel(side,opened)
+        y=min(y,floor-box.height/2)
+        place(canvas,box,x,y)
+        if opened>.3:
+            gift={'sun':'star_lamp','earth':'plant','moon':'moon_cushion','stars':'star_map'}.get(target['kind'],'paper_plane')
+            item=decoration(gift,max(24,round(side*.86))).copy()
+            item.putalpha(item.getchannel('A').point(lambda a:round(a*min(1,(opened-.3)/.7))))
+            place(canvas,item,x,y-side*.72*opened)
         if not reduced:
             for n in range(7):
                 angle=n*2.399;radius=h*.2*ease((age-2.7)/.7)

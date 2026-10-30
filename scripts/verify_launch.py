@@ -42,7 +42,7 @@ def main():
             self.wfile.flush()
     http=ThreadingHTTPServer(('127.0.0.1',0),Provider)
     threading.Thread(target=http.serve_forever,daemon=True).start()
-    layouts=[];flights=[];raw=bytearray();report={}
+    layouts=[];flights=[];deliveries=[];raw=bytearray();report={}
     with tempfile.TemporaryDirectory(prefix='launch-verify-',dir='/var/tmp') as temp:
         theater=Theater(temp,seed=7);original=theater.command
         def observe(message):
@@ -51,6 +51,8 @@ def main():
                 layouts.append(message)
                 flight=theater.world.snapshot()['flight']
                 if flight:flights.append(flight)
+                station=theater.world.snapshot()['station']
+                if station:deliveries.append(station)
             return result
         theater.command=observe
         server=UnixServer(Path(temp)/'control.sock',theater)
@@ -104,6 +106,11 @@ def main():
             report['one_submission_id']=len(ids)==1
             report['no_prompt_in_ipc']='local-launch-check' not in json.dumps(layouts)
             report['flights_complete']=report['phases']==['build','ignite','launch','orbit']
+            deadline=time.monotonic()+7
+            while time.monotonic()<deadline and not any(s['returning'] and s['return_age']>=3.7 for s in deliveries):pump(.1)
+            report['courier_returns']=any(s['returning'] for s in deliveries)
+            report['gift_opens_after_return']=any(s['returning'] and s['return_age']>=3.7 for s in deliveries)
+            report['activity_kinds']=sorted({m['activity']['kind'] for m in layouts if m.get('activity')})
             os.write(master,b'\x05\x15/quit');pump(.4);os.write(master,b'\r');pump(20)
             report['exit_code']=proc.poll()
         finally:
@@ -118,7 +125,7 @@ def main():
         (args.output/'layouts.json').write_text(json.dumps(layouts)+'\n')
         print(json.dumps(report,indent=2))
         assert all(report[k] for k in ('empty_enter_does_not_launch','menu_does_not_launch','local_provider_received_turn',
-               'sun_destination','one_submission_id','no_prompt_in_ipc','flights_complete','final_image_clear'))
+               'sun_destination','one_submission_id','no_prompt_in_ipc','flights_complete','courier_returns','gift_opens_after_return','final_image_clear'))
         assert report['exit_code']==0
 
 if __name__=='__main__':main()
